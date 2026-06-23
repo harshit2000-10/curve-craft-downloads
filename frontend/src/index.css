@@ -1,0 +1,124 @@
+@import "@fontsource/inter/300.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* ── App design tokens ─────────────────────────────────────── */
+  :root {
+    --bg: #0b0b10;
+    --s1: #111117;
+    --s2: #18181f;
+    --s3: #21212a;
+    --s4: #2a2a36;
+    --border: rgba(255, 255, 255, 0.07);
+    --border-hi: rgba(255, 255, 255, 0.13);
+    --accent: #7c6cf8;
+    --t1: #eeeef5;
+    --t2: #9191a8;
+    --t3: #52526a;
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+
+    /* shadcn-compatible color tokens (light mode) */
+    --primary: 124 108 248;      /* violet #7c6cf8  */
+    --secondary: 245 245 250;    /* near-white       */
+    --background: 255 255 255;
+    --foreground: 11 11 16;
+    --ring: 124 108 248;
+    --border-color: 0 0 0;
+    --popover: 255 255 255;
+    --popover-foreground: 11 11 16;
+    --muted-foreground: 82 82 106;
+  }
+
+  /* Dark mode overrides */
+  .dark {
+    color-scheme: dark;
+    --primary: 148 132 250;      /* slightly lighter violet */
+    --secondary: 24 24 31;       /* near-black               */
+    --background: 28 28 38;
+    --foreground: 238 238 245;
+    --ring: 148 132 250;
+    --border-color: 255 255 255;
+    --popover: 42 42 54;
+    --popover-foreground: 238 238 245;
+    --muted-foreground: 145 145 168;
+  }
+
+  .light {
+    color-scheme: light;
+  }
+
+  /* ── Keyframe animations (Tailwind v3 — declared here, registered in config) ── */
+  @keyframes glow {
+    0%   { box-shadow: 0 0 8px  rgba(124, 108, 248, 0.6); }
+    50%  { box-shadow: 0 0 20px rgba(124, 108, 248, 0.9); }
+    100% { box-shadow: 0 0 8px  rgba(124, 108, 248, 0.6); }
+  }
+
+  @keyframes bounceDrop {
+    0%   { transform: translateY(0);    }
+    50%  { transform: translateY(-10px); }
+    100% { transform: translateY(0);    }
+  }
+
+  @keyframes moveBackground {
+    from { background-position: 0% 0%; }
+    to   { background-position: 0% -1000%; }
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  /* Keyboard focus ring — visible only for keyboard nav, hidden for mouse */
+  :focus-visible {
+    outline: 2px solid #7c6cf8;
+    outline-offset: 2px;
+  }
+
+  /* Remove browser default outline only when :focus-visible is supported */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  html {
+    font-size: 130%; /* 16px → 20.8px base, scales all rem-based text */
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Thin scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2a2a36;
+    border-radius: 2px;
+  }
+}
+
+@layer utilities {
+  .ease-out-strong {
+    transition-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+}
