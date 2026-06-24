@@ -12,6 +12,7 @@
     "@fontsource/inter": "^5.2.8",
     "@radix-ui/react-slider": "^1.4.1",
     "@radix-ui/react-tooltip": "^1.2.10",
+    "@vercel/analytics": "^2.0.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.395.0",
