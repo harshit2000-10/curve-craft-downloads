@@ -16,7 +16,9 @@ function loadSaved(): SavedFormula[] {
   catch { return []; }
 }
 function persistSaved(list: SavedFormula[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  // Best-effort — a storage-restricted browser shouldn't block saving a
+  // formula for the current session, only its persistence across visits.
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch { /* ignore */ }
 }
 
 interface Props {

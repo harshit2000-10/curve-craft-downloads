@@ -16,10 +16,20 @@ interface Props {
 
 export default function UploadScreen({ theme, onFile, onSample, onToggleTheme, onOpenProject }: Props) {
   const isDark = theme === "dark";
-  const [agreed, setAgreed] = useState(() => localStorage.getItem("cc_tnc") === "1");
+  const [agreed, setAgreed] = useState(() => {
+    // Reading can throw under storage-restricted browsers (Brave shields set to
+    // block storage, Safari private mode, strict cookie policies) — fall back to
+    // "not yet agreed" rather than let it crash the initial render.
+    try { return localStorage.getItem("cc_tnc") === "1"; }
+    catch { return false; }
+  });
 
   function agree() {
-    localStorage.setItem("cc_tnc", "1");
+    // Persistence is a convenience, not a requirement — if storage is blocked,
+    // the session must still work. Without the try/catch, a thrown setItem here
+    // stops execution before setAgreed(true), silently locking the upload zone
+    // (pointer-events-none) with no visible error.
+    try { localStorage.setItem("cc_tnc", "1"); } catch { /* best-effort only */ }
     setAgreed(true);
   }
   const [showTnc, setShowTnc] = useState(false);
@@ -180,7 +190,11 @@ export default function UploadScreen({ theme, onFile, onSample, onToggleTheme, o
               <input
                 type="checkbox"
                 checked={agreed}
-                onChange={(e) => e.target.checked ? agree() : (localStorage.removeItem("cc_tnc"), setAgreed(false))}
+                onChange={(e) => {
+                  if (e.target.checked) { agree(); return; }
+                  try { localStorage.removeItem("cc_tnc"); } catch { /* best-effort only */ }
+                  setAgreed(false);
+                }}
                 className="sr-only"
               />
               <div className={cn(

@@ -31,7 +31,9 @@ function loadStyleTemplates(): StyleTemplate[] {
   catch { return []; }
 }
 function persistStyleTemplates(list: StyleTemplate[]) {
-  localStorage.setItem(STYLE_STORAGE_KEY, JSON.stringify(list));
+  // Best-effort — a storage-restricted browser shouldn't break saving a
+  // template for the current session, only its persistence across visits.
+  try { localStorage.setItem(STYLE_STORAGE_KEY, JSON.stringify(list)); } catch { /* ignore */ }
 }
 
 const LEGEND_CORNERS: { id: "tl" | "tr" | "bl" | "br"; row: number; col: number }[] = [
