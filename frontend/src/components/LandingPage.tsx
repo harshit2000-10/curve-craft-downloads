@@ -23,6 +23,7 @@ export default function LandingPage() {
   const demoRendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const heroResizeRef = useRef<(() => void) | null>(null);
   const demoResizeRef = useRef<(() => void) | null>(null);
+  const demoCleanupRef = useRef<(() => void) | null>(null);
   const sceneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -53,6 +54,7 @@ export default function LandingPage() {
       cancelAnimationFrame(demoRafRef.current);
       if (heroResizeRef.current) { window.removeEventListener("resize", heroResizeRef.current); heroResizeRef.current = null; }
       if (demoResizeRef.current) { window.removeEventListener("resize", demoResizeRef.current); demoResizeRef.current = null; }
+      if (demoCleanupRef.current) { demoCleanupRef.current(); demoCleanupRef.current = null; }
       if (heroRendererRef.current) { heroRendererRef.current.dispose(); heroRendererRef.current = null; }
       if (demoRendererRef.current) { demoRendererRef.current.dispose(); demoRendererRef.current = null; }
       io.disconnect();
@@ -266,10 +268,6 @@ export default function LandingPage() {
       rotX = Math.max(-0.2, Math.min(0.7, rotX + (e.clientY - lastY) * 0.005));
       lastX = e.clientX; lastY = e.clientY;
     };
-    stage.addEventListener("pointerdown", onDown);
-    window.addEventListener("pointerup", onUp);
-    window.addEventListener("pointermove", onDrag);
-
     const raycaster = new THREE.Raycaster();
     const ptr = new THREE.Vector2();
     const demoMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"];
@@ -278,14 +276,30 @@ export default function LandingPage() {
     const tipL = demoTipLabel.current;
     const tipV = demoTipValue.current;
 
-    stage.addEventListener("pointermove", (e: PointerEvent) => {
+    const onStageMove = (e: PointerEvent) => {
       const r = stage.getBoundingClientRect();
       hoverPx = e.clientX - r.left; hoverPy = e.clientY - r.top;
       ptr.x = (hoverPx / r.width) * 2 - 1;
       ptr.y = -(hoverPy / r.height) * 2 + 1;
       hovering = true;
-    });
-    stage.addEventListener("pointerleave", () => { hovering = false; hovered = -1; if (tip) tip.style.opacity = "0"; });
+    };
+    const onStageLeave = () => { hovering = false; hovered = -1; if (tip) tip.style.opacity = "0"; };
+
+    stage.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointermove", onDrag);
+    stage.addEventListener("pointermove", onStageMove);
+    stage.addEventListener("pointerleave", onStageLeave);
+
+    // Store teardown so the effect's cleanup can remove these — the window-scoped
+    // listeners in particular outlive the canvas and would otherwise leak.
+    demoCleanupRef.current = () => {
+      stage.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointermove", onDrag);
+      stage.removeEventListener("pointermove", onStageMove);
+      stage.removeEventListener("pointerleave", onStageLeave);
+    };
 
     const clock = new THREE.Clock();
     const animate = () => {
@@ -347,7 +361,7 @@ export default function LandingPage() {
     if (tabs) {
       tabs.querySelectorAll("button").forEach((b) => {
         const active = b.getAttribute("data-type") === t;
-        b.style.background = active ? "linear-gradient(135deg,#7c6cf8,#9d7cff)" : "transparent";
+        b.style.background = active ? "linear-gradient(135deg,#7c5cff,#9d7cff)" : "transparent";
         b.style.color = active ? "#07070d" : "#b9b8d0";
       });
     }
@@ -379,7 +393,7 @@ export default function LandingPage() {
       {/* NAV */}
       <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 44px", backdropFilter: "blur(14px)", background: "rgba(7,7,13,0.55)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 9, background: "linear-gradient(135deg,#7c6cf8,#9d7cff)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 22px rgba(124,108,248,0.55)" }}>
+          <div style={{ width: 34, height: 34, borderRadius: 9, background: "linear-gradient(135deg,#7c5cff,#9d7cff)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 22px rgba(124,108,248,0.55)" }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 17c3-1 4-9 7-9s4 7 7 4" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" /><circle cx="3" cy="17" r="1.6" fill="#fff" /><circle cx="17" cy="12" r="1.6" fill="#fff" /></svg>
           </div>
           <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 19, letterSpacing: "-0.01em" }}>Curve&nbsp;Craft</span>
@@ -388,7 +402,7 @@ export default function LandingPage() {
           <a href="#features" style={{ color: "inherit", textDecoration: "none" }}>Features</a>
           <a href="#how" style={{ color: "inherit", textDecoration: "none" }}>How it works</a>
           <a href="#demo" style={{ color: "inherit", textDecoration: "none" }}>Demo</a>
-          <button onClick={() => navigate("/app")} style={{ color: "#07070d", background: "linear-gradient(135deg,#7c6cf8,#9d7cff)", padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 600, fontSize: 14.5, fontFamily: "'Plus Jakarta Sans',sans-serif", boxShadow: "0 6px 20px rgba(124,108,248,0.35)" }}>Open app</button>
+          <button onClick={() => navigate("/app")} style={{ color: "#07070d", background: "linear-gradient(135deg,#7c5cff,#9d7cff)", padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 600, fontSize: 14.5, fontFamily: "'Plus Jakarta Sans',sans-serif", boxShadow: "0 6px 20px rgba(124,108,248,0.35)" }}>Open app</button>
         </div>
       </nav>
 
@@ -400,12 +414,12 @@ export default function LandingPage() {
             Open-source · 100% in-browser · No data leaves your machine
           </div>
           <h1 style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "clamp(40px,5.2vw,72px)", lineHeight: 1.02, letterSpacing: "-0.03em", margin: "0 0 22px" }}>
-            Turn any CSV into a<br /><span style={{ background: "linear-gradient(110deg,#7c6cf8 10%,#9d7cff 45%,#5eead4 95%)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>publication-ready graph</span>
+            Turn any CSV into a<br /><span style={{ background: "linear-gradient(110deg,#7c5cff 10%,#9d7cff 45%,#5eead4 95%)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>publication-ready graph</span>
           </h1>
           <p style={{ fontSize: 18.5, lineHeight: 1.6, color: "#a9a8c4", maxWidth: 520, margin: "0 0 36px" }}>
             Drop in a spreadsheet, get a beautiful, fully-customizable chart in seconds. Free, fast, and private — your data never touches a server.
           </p>
-          <button onClick={() => navigate("/app")} style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "linear-gradient(135deg,#7c6cf8,#9d7cff)", color: "#07070d", fontWeight: 700, fontSize: 16, fontFamily: "'Plus Jakarta Sans',sans-serif", padding: "15px 28px", borderRadius: 13, border: "none", cursor: "pointer", boxShadow: "0 10px 34px rgba(124,108,248,0.42)" }}>
+          <button onClick={() => navigate("/app")} style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "linear-gradient(135deg,#7c5cff,#9d7cff)", color: "#07070d", fontWeight: 700, fontSize: 16, fontFamily: "'Plus Jakarta Sans',sans-serif", padding: "15px 28px", borderRadius: 13, border: "none", cursor: "pointer", boxShadow: "0 10px 34px rgba(124,108,248,0.42)" }}>
             Craft a chart
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#07070d" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
@@ -433,7 +447,7 @@ export default function LandingPage() {
       {/* FEATURES */}
       <section id="features" style={{ position: "relative", zIndex: 1, padding: "90px 64px 40px", maxWidth: 1240, margin: "0 auto" }}>
         <div className="lp-reveal" style={{ textAlign: "center", marginBottom: 54 }}>
-          <div style={{ fontSize: 13, letterSpacing: "0.18em", textTransform: "uppercase", color: "#7c6cf8", fontWeight: 600, marginBottom: 14 }}>Why Curve Craft</div>
+          <div style={{ fontSize: 13, letterSpacing: "0.18em", textTransform: "uppercase", color: "#7c5cff", fontWeight: 600, marginBottom: 14 }}>Why Curve Craft</div>
           <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: "clamp(30px,3.6vw,46px)", fontWeight: 700, letterSpacing: "-0.02em", margin: 0 }}>Everything you need, nothing you don't</h2>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 22, perspective: 1200 }}>
@@ -486,7 +500,7 @@ export default function LandingPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 24, position: "relative" }}>
           <div style={{ position: "absolute", top: 36, left: "16%", right: "16%", height: 2, background: "linear-gradient(90deg,transparent,rgba(124,108,248,0.4),rgba(94,234,212,0.4),transparent)", zIndex: 0 }} />
           {[
-            { num: "1", title: "Drop your CSV", desc: "Drag a file in or paste raw data. Columns are detected automatically.", bg: "linear-gradient(135deg,#7c6cf8,#9d7cff)", shadow: "0 0 30px rgba(124,108,248,0.5)" },
+            { num: "1", title: "Drop your CSV", desc: "Drag a file in or paste raw data. Columns are detected automatically.", bg: "linear-gradient(135deg,#7c5cff,#9d7cff)", shadow: "0 0 30px rgba(124,108,248,0.5)" },
             { num: "2", title: "Pick & tune", desc: "Choose a chart type, map axes, then tweak colors, labels and scale.", bg: "linear-gradient(135deg,#6f8bff,#5eead4)", shadow: "0 0 30px rgba(94,234,212,0.4)" },
             { num: "3", title: "Export & share", desc: "Download a publication-ready SVG or PNG and drop it anywhere.", bg: "linear-gradient(135deg,#5eead4,#a0ffd6)", shadow: "0 0 30px rgba(94,234,212,0.4)" },
           ].map(({ num, title, desc, bg, shadow }) => (
@@ -505,10 +519,10 @@ export default function LandingPage() {
           <div style={{ position: "absolute", top: "-40%", right: "-10%", width: 480, height: 480, borderRadius: "50%", background: "radial-gradient(circle,rgba(124,108,248,0.18),transparent 70%)", pointerEvents: "none" }} />
           <div style={{ display: "grid", gridTemplateColumns: "0.85fr 1.15fr", gap: 40, alignItems: "center", position: "relative" }}>
             <div>
-              <div style={{ fontSize: 13, letterSpacing: "0.18em", textTransform: "uppercase", color: "#7c6cf8", fontWeight: 600, marginBottom: 14 }}>Live preview</div>
+              <div style={{ fontSize: 13, letterSpacing: "0.18em", textTransform: "uppercase", color: "#7c5cff", fontWeight: 600, marginBottom: 14 }}>Live preview</div>
               <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: "clamp(26px,2.8vw,38px)", fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 16px" }}>Beautiful charts, zero setup</h2>
               <p style={{ fontSize: 16, lineHeight: 1.6, color: "#a9a8c4", margin: "0 0 28px" }}>This is the kind of crisp, customizable output you get straight out of the box — no design skills required.</p>
-              <button onClick={() => navigate("/app")} style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "linear-gradient(135deg,#7c6cf8,#9d7cff)", color: "#07070d", fontWeight: 700, fontSize: 15.5, fontFamily: "'Plus Jakarta Sans',sans-serif", padding: "14px 26px", borderRadius: 12, border: "none", cursor: "pointer", boxShadow: "0 10px 30px rgba(124,108,248,0.4)" }}>
+              <button onClick={() => navigate("/app")} style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "linear-gradient(135deg,#7c5cff,#9d7cff)", color: "#07070d", fontWeight: 700, fontSize: 15.5, fontFamily: "'Plus Jakarta Sans',sans-serif", padding: "14px 26px", borderRadius: 12, border: "none", cursor: "pointer", boxShadow: "0 10px 30px rgba(124,108,248,0.4)" }}>
                 Try it with your data
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#07070d" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
               </button>
@@ -518,7 +532,7 @@ export default function LandingPage() {
                 <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 600, fontSize: 15 }}>Monthly revenue</div>
                 <div ref={demoTabsRef} style={{ display: "flex", gap: 5, padding: 4, borderRadius: 11, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
                   {[{ t: "bars", label: "Bars" }, { t: "points", label: "Points" }, { t: "line", label: "Ribbon" }].map(({ t, label }) => (
-                    <button key={t} data-type={t} onClick={() => setType(t)} style={{ border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 12.5, fontWeight: 600, padding: "6px 13px", borderRadius: 8, background: t === "bars" ? "linear-gradient(135deg,#7c6cf8,#9d7cff)" : "transparent", color: t === "bars" ? "#07070d" : "#b9b8d0" }}>{label}</button>
+                    <button key={t} data-type={t} onClick={() => setType(t)} style={{ border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 12.5, fontWeight: 600, padding: "6px 13px", borderRadius: 8, background: t === "bars" ? "linear-gradient(135deg,#7c5cff,#9d7cff)" : "transparent", color: t === "bars" ? "#07070d" : "#b9b8d0" }}>{label}</button>
                   ))}
                 </div>
               </div>
@@ -559,7 +573,7 @@ export default function LandingPage() {
       {/* FOOTER */}
       <footer style={{ position: "relative", zIndex: 1, padding: "50px 64px", maxWidth: 1240, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid rgba(255,255,255,0.07)", marginTop: 60, flexWrap: "wrap", gap: 18 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 8, background: "linear-gradient(135deg,#7c6cf8,#9d7cff)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 30, height: 30, borderRadius: 8, background: "linear-gradient(135deg,#7c5cff,#9d7cff)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M3 17c3-1 4-9 7-9s4 7 7 4" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" /></svg>
           </div>
           <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 16 }}>Curve Craft</span>

@@ -52,7 +52,7 @@ const Slider = React.forwardRef<
   const renderThumb = (value: number) => {
     const thumb = (
       <SliderPrimitive.Thumb
-        className="block h-[14px] w-[14px] rounded-full border-2 border-primary bg-background shadow-sm transition-transform duration-100 hover:scale-110 focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-ring/40 active:scale-95 data-[disabled]:cursor-not-allowed"
+        className="block h-[14px] w-[14px] rounded-full border-2 border-violet-500 bg-[var(--raised)] shadow-[0_0_0_3px_rgba(124,92,255,0.2)] transition-transform duration-100 hover:scale-110 focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-violet-500/40 active:scale-95 data-[disabled]:cursor-not-allowed"
         onPointerDown={handlePointerDown}
       />
     );
@@ -85,8 +85,8 @@ const Slider = React.forwardRef<
       onValueChange={handleValueChange}
       {...props}
     >
-      <SliderPrimitive.Track className="relative grow overflow-hidden rounded-full bg-border/10 data-[orientation=horizontal]:h-[6px] data-[orientation=vertical]:h-full data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-[6px]">
-        <SliderPrimitive.Range className="absolute bg-primary data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full" />
+      <SliderPrimitive.Track className="relative grow overflow-hidden rounded-full bg-[var(--border-hover)] data-[orientation=horizontal]:h-[5px] data-[orientation=vertical]:h-full data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-[5px]">
+        <SliderPrimitive.Range className="absolute bg-violet-500 data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full" />
       </SliderPrimitive.Track>
       {internalValue?.map((value, index) => (
         <React.Fragment key={index}>{renderThumb(value)}</React.Fragment>

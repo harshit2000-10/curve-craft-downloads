@@ -1,4 +1,4 @@
-import { useState, useRef, DragEvent, ChangeEvent } from "react";
+import { useState, useRef, useEffect, DragEvent, ChangeEvent } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import clsx from "clsx";
 import {
@@ -9,6 +9,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { GlassBtn } from "@/components/ui/liquid-glass";
+import { FILE_ACCEPT, SUPPORTED_EXTENSIONS } from "@/lib/fileTypes";
 
 interface FileWithPreview {
   id: string;
@@ -29,12 +30,16 @@ interface FileUploadProps {
 }
 
 export default function FileUpload({
-  accept = "image/*,application/pdf,video/*,audio/*,text/*,application/zip,.csv,.tsv",
+  accept = FILE_ACCEPT,
   onFileAccepted,
 }: FileUploadProps) {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const intervalsRef = useRef<ReturnType<typeof setInterval>[]>([]);
+
+  // Clear any in-flight progress intervals if the component unmounts mid-upload.
+  useEffect(() => () => { intervalsRef.current.forEach(clearInterval); }, []);
 
   const handleFiles = (fileList: FileList) => {
     const accepted = accept.split(",").map(s => s.trim().toLowerCase());
@@ -75,9 +80,11 @@ export default function FileUpload({
       );
       if (progress >= 100) {
         clearInterval(interval);
+        intervalsRef.current = intervalsRef.current.filter((i) => i !== interval);
         if (navigator.vibrate) navigator.vibrate(100);
       }
     }, 300);
+    intervalsRef.current.push(interval);
   };
 
   const onDrop = (e: DragEvent) => {
@@ -115,7 +122,7 @@ export default function FileUpload({
         onClick={() => inputRef.current?.click()}
         initial={false}
         animate={{
-          borderColor: isDragging ? "#7c6cf8" : "#ffffff10",
+          borderColor: isDragging ? "#7c5cff" : "#ffffff10",
           scale: isDragging ? 1.02 : 1,
         }}
         whileHover={{ scale: 1.01 }}
@@ -161,10 +168,10 @@ export default function FileUpload({
           <div className="space-y-2">
             <h3 className="text-xl md:text-2xl font-semibold text-zinc-800 dark:text-zinc-100">
               {isDragging
-                ? "Drop your CSV here"
+                ? "Drop your file here"
                 : files.length
                   ? "Drop another file"
-                  : "Drop your CSV here"}
+                  : "Drop your file here"}
             </h3>
             <p className="text-zinc-600 dark:text-zinc-300 md:text-lg max-w-md mx-auto">
               {isDragging ? (
@@ -179,7 +186,7 @@ export default function FileUpload({
               )}
             </p>
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              Supports .csv, .tsv and .xlsx files
+              Supports {SUPPORTED_EXTENSIONS.join(", ")} files
             </p>
           </div>
 

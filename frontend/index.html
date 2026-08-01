@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Curve Craft — CSV to Chart</title>
     <meta name="description" content="Turn any CSV into a publication-quality chart. Free, open-source, runs entirely in your browser — no data leaves your machine." />
-    <meta name="theme-color" content="#7c6cf8" />
+    <meta name="theme-color" content="#7c5cff" />
 
     <!-- Open Graph -->
     <meta property="og:title" content="Curve Craft — CSV to Chart" />
@@ -15,8 +15,24 @@
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
   </head>
   <body>
+    <script>
+      (function () {
+        var saved = localStorage.getItem("cc-theme");
+        var theme = saved === "light" || saved === "dark"
+          ? saved
+          : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        var root = document.documentElement;
+        root.classList.add(theme);
+        root.setAttribute("data-theme", theme);
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

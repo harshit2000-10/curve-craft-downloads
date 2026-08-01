@@ -11,9 +11,10 @@ interface Props {
   onFile: (file: File) => void;
   onSample: () => void;
   onToggleTheme: () => void;
+  onOpenProject: () => void;
 }
 
-export default function UploadScreen({ theme, onFile, onSample, onToggleTheme }: Props) {
+export default function UploadScreen({ theme, onFile, onSample, onToggleTheme, onOpenProject }: Props) {
   const isDark = theme === "dark";
   const [agreed, setAgreed] = useState(() => localStorage.getItem("cc_tnc") === "1");
 
@@ -27,7 +28,7 @@ export default function UploadScreen({ theme, onFile, onSample, onToggleTheme }:
     <div
       className={cn(
         "relative flex h-full w-full flex-col items-center overflow-y-auto overflow-x-hidden",
-        isDark ? "bg-[#0b0b10]" : "bg-white",
+        isDark ? "bg-[var(--bg)]" : "bg-[var(--bg)]",
       )}
     >
       {/* Background */}
@@ -112,16 +113,13 @@ export default function UploadScreen({ theme, onFile, onSample, onToggleTheme }:
 
         {/* Upload zone — blurred + unclickable until agreed */}
         <div className={cn("relative w-full transition-all duration-300", !agreed && "pointer-events-none select-none")}>
-          <FileUpload
-            accept=".csv,.tsv,text/csv,text/tab-separated-values"
-            onFileAccepted={onFile}
-          />
+          <FileUpload onFileAccepted={onFile} />
           {/* Overlay when not agreed */}
           {!agreed && (
-            <div className={cn(
-              "absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-2xl backdrop-blur-[3px]",
-              isDark ? "bg-[#0b0b10]/60" : "bg-white/60",
-            )}>
+            <div
+              className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-2xl backdrop-blur-[3px]"
+              style={{ background: "color-mix(in srgb, var(--bg) 60%, transparent)" }}
+            >
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
                 className={isDark ? "text-white/25" : "text-black/25"}>
@@ -135,22 +133,41 @@ export default function UploadScreen({ theme, onFile, onSample, onToggleTheme }:
           )}
         </div>
 
-        {/* Sample data */}
-        <GlassBtn
-          onClick={agreed ? onSample : undefined}
-          className={cn(
-            "mt-2 rounded-lg border px-4 py-2 text-xs font-medium transition-all duration-150",
-            agreed
-              ? isDark
-                ? "border-white/10 text-white/40 hover:border-white/20 hover:text-white/60 active:scale-[0.97]"
-                : "border-black/10 text-black/40 hover:border-black/20 hover:text-black/60 active:scale-[0.97]"
-              : "pointer-events-none opacity-30 " + (isDark ? "border-white/6 text-white/25" : "border-black/6 text-black/25"),
-          )}
-          style={{ transitionTimingFunction: "cubic-bezier(0.23,1,0.32,1)" }}
-          wrapperClassName="inline-flex items-center gap-1.5"
-        >
-          Load sample dataset →
-        </GlassBtn>
+        {/* Sample data + open saved project */}
+        <div className="mt-2 flex items-center gap-2">
+          <GlassBtn
+            onClick={agreed ? onSample : undefined}
+            className={cn(
+              "rounded-lg border px-4 py-2 text-xs font-medium transition-all duration-150",
+              agreed
+                ? isDark
+                  ? "border-white/10 text-white/40 hover:border-white/20 hover:text-white/60 active:scale-[0.97]"
+                  : "border-black/10 text-black/40 hover:border-black/20 hover:text-black/60 active:scale-[0.97]"
+                : "pointer-events-none opacity-30 " + (isDark ? "border-white/6 text-white/25" : "border-black/6 text-black/25"),
+            )}
+            style={{ transitionTimingFunction: "cubic-bezier(0.23,1,0.32,1)" }}
+            wrapperClassName="inline-flex items-center gap-1.5"
+          >
+            Load sample dataset →
+          </GlassBtn>
+
+          <GlassBtn
+            onClick={agreed ? onOpenProject : undefined}
+            title="Open a previously saved .curvecraft.json project"
+            className={cn(
+              "rounded-lg border px-4 py-2 text-xs font-medium transition-all duration-150",
+              agreed
+                ? isDark
+                  ? "border-white/10 text-white/40 hover:border-white/20 hover:text-white/60 active:scale-[0.97]"
+                  : "border-black/10 text-black/40 hover:border-black/20 hover:text-black/60 active:scale-[0.97]"
+                : "pointer-events-none opacity-30 " + (isDark ? "border-white/6 text-white/25" : "border-black/6 text-black/25"),
+            )}
+            style={{ transitionTimingFunction: "cubic-bezier(0.23,1,0.32,1)" }}
+            wrapperClassName="inline-flex items-center gap-1.5"
+          >
+            Open project
+          </GlassBtn>
+        </div>
 
         {/* ── Terms checkbox ─────────────────────────────────────────────── */}
         <div className={cn(
@@ -159,7 +176,7 @@ export default function UploadScreen({ theme, onFile, onSample, onToggleTheme }:
         )}>
           <label className="flex cursor-pointer items-start gap-3">
             {/* Custom checkbox */}
-            <div className="relative mt-0.5 flex-shrink-0" onClick={() => agreed ? (localStorage.removeItem("cc_tnc"), setAgreed(false)) : agree()}>
+            <div className="relative mt-0.5 flex-shrink-0">
               <input
                 type="checkbox"
                 checked={agreed}

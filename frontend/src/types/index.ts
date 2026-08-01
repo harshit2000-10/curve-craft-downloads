@@ -1,4 +1,45 @@
+import type { AggFunc, Filter, SortMode } from "@/lib/analysis";
+import type { TrendlineKind } from "@/lib/stats";
+
 export type LineDash = "solid" | "dot" | "dash" | "dashdot";
+
+export type AxisScale = "linear" | "log";
+
+export type ChartCorner = "tl" | "tr" | "bl" | "br";
+
+/** How a series' error bars are derived. */
+export interface ErrorBarConfig {
+  mode: "none" | "column" | "percent" | "constant" | "stddev" | "stderr";
+  /** Column holding the ± value, when mode is "column". */
+  col: string;
+  /** Magnitude for percent/constant modes. */
+  value: number;
+}
+
+/** A horizontal or vertical marker line — target, threshold, mean, median. */
+export interface RefLine {
+  id: string;
+  axis: "x" | "y";
+  mode: "value" | "mean" | "median";
+  /** Column the mean/median is computed from. */
+  col: string;
+  value: number;
+  label: string;
+  color: string;
+  dash: LineDash;
+  width: number;
+}
+
+/** Free-placed callout text. */
+export interface ChartAnnotation {
+  id: string;
+  /** Kept as a string so date and category axes work, not just numeric ones. */
+  x: string;
+  y: number;
+  text: string;
+  showArrow: boolean;
+  color: string;
+}
 
 export type ChartType =
   | "line"
@@ -8,10 +49,15 @@ export type ChartType =
   | "pie"
   | "histogram"
   | "box"
-  | "heatmap";
+  | "heatmap"
+  | "violin"
+  | "bubble"
+  | "donut"
+  | "treemap";
 
 export type ExportFormat = "png" | "svg" | "jpeg" | "webp";
 export type AppTheme = "dark" | "light";
+export type EditMode = "off" | "add" | "delete";
 export type PlotlyTheme =
   | "plotly_white"
   | "plotly_dark"
@@ -60,7 +106,7 @@ export interface AppState {
   legendFontFamily: string;
   legendFontSize: number;
   legendFontWeight: number;
-  legendCorner: "tl" | "tr" | "bl" | "br";
+  legendCorner: ChartCorner;
   showMajorTicks: boolean;
   majorTickLen: number;
   majorTickWidth: number;
@@ -72,4 +118,35 @@ export interface AppState {
   xRangeMax: string | number | null;
   yRangeMin: number | null;
   yRangeMax: number | null;
+  editMode: EditMode;
+  editTargetCol: string;
+  editHistory: Record<string, unknown>[][];
+  boxShowPoints: boolean;
+  boxPointPos: number;
+  boxJitter: number;
+  bubbleSizeCol: string;
+  donutHoleSize: number;
+  barMode: "group" | "stack";
+  /** Analysis pipeline — applied in order: filters → aggregation → sort. */
+  filters: Filter[];
+  aggFunc: AggFunc;
+  sortMode: SortMode;
+
+  // ── Publication-grade overlays ────────────────────────────────────
+  xAxisScale: AxisScale;
+  yAxisScale: AxisScale;
+  y2AxisScale: AxisScale;
+  /** Y columns drawn against the right-hand axis instead of the left. */
+  secondaryYCols: string[];
+  y2Label: string;
+  /** Error-bar config per Y column. */
+  errorBars: Record<string, ErrorBarConfig>;
+  trendline: TrendlineKind;
+  /** Window size for the moving-average trendline. */
+  trendlineWindow: number;
+  trendlineShowStats: boolean;
+  /** Corner the equation/R² box sits in — defaults away from where data usually is. */
+  trendlineStatsCorner: ChartCorner;
+  refLines: RefLine[];
+  annotations: ChartAnnotation[];
 }

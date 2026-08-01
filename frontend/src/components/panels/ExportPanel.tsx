@@ -1,4 +1,4 @@
-import { Download } from "lucide-react";
+import { Download, Copy, FileText, Table } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GlassBtn } from "@/components/ui/liquid-glass";
 import { Slider } from "@/components/ui/slider";
@@ -9,12 +9,14 @@ interface Props {
   theme: AppTheme;
   onChange: (patch: Partial<AppState>) => void;
   onExport: () => void;
+  onCopyChart: () => void;
+  onExportPdf: () => void;
+  onExportCsv: () => void;
 }
 
-export default function ExportPanel({ state, theme, onChange, onExport }: Props) {
-  const isDark = theme === "dark";
-  const label = cn("mb-1.5 text-[13px] font-semibold uppercase tracking-[0.08em]", isDark ? "text-white/25" : "text-black/35");
-  const input = cn("w-full rounded-[7px] border px-2.5 text-xs outline-none transition-colors duration-150 h-8", isDark ? "border-white/8 bg-white/5 text-white/80 placeholder:text-white/20 focus:border-violet-500/60 focus:bg-white/8" : "border-black/10 bg-black/4 text-black/80 placeholder:text-black/25 focus:border-violet-400/60");
+export default function ExportPanel({ state, onChange, onExport, onCopyChart, onExportPdf, onExportCsv }: Props) {
+  const label = "mb-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-3)]";
+  const input = "w-full rounded-[9px] border px-3 text-xs outline-none transition-colors duration-150 h-[42px] border-[var(--border)] bg-[var(--raised)] text-[var(--text)] placeholder:text-[var(--text-3)] focus:border-[var(--accent)]";
 
   const scale = (state.exportDpi / 96).toFixed(1);
   const formats: ExportFormat[] = ["png", "svg", "jpeg", "webp"];
@@ -39,30 +41,28 @@ export default function ExportPanel({ state, theme, onChange, onExport }: Props)
                 className={cn(
                   "flex flex-col items-start gap-0.5 rounded-[8px] border px-3 py-2 text-left transition-all duration-150 active:scale-[0.96]",
                   active
-                    ? "border-violet-500 bg-violet-500/15 text-violet-400"
-                    : isDark
-                    ? "border-white/8 bg-white/4 text-white/60 hover:border-white/14"
-                    : "border-black/8 bg-black/3 text-black/60 hover:border-black/14",
+                    ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-2)]"
+                    : "border-[var(--border)] bg-[var(--raised)] text-[var(--text-2)] hover:border-[var(--border-hover)]",
                 )}
                 wrapperClassName="flex flex-col items-start gap-0.5 w-full"
                 style={{ transitionTimingFunction: "cubic-bezier(0.23,1,0.32,1)" }}
               >
                 <span className="text-[13px] font-semibold">{p.label}</span>
-                <span className={cn("text-[11px]", active ? "text-violet-300/70" : isDark ? "text-white/30" : "text-black/35")}>{p.desc}</span>
+                <span className={cn("text-[11px]", active ? "text-[var(--accent-2)]" : "text-[var(--text-3)]")}>{p.desc}</span>
               </GlassBtn>
             );
           })}
         </div>
       </div>
 
-      <div className={cn("h-px", isDark ? "bg-white/6" : "bg-black/8")} />
+      <div className={"h-px bg-[var(--border)]"} />
 
       {/* Dimensions */}
       <div>
         <div className={label}>Dimensions</div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <div className={cn("mb-1 text-[14px]", isDark ? "text-white/30" : "text-black/40")}>Width (px)</div>
+            <div className={"mb-1 text-[14px] text-[var(--text-3)]"}>Width (px)</div>
             <input
               type="number"
               className={input}
@@ -73,7 +73,7 @@ export default function ExportPanel({ state, theme, onChange, onExport }: Props)
             />
           </div>
           <div>
-            <div className={cn("mb-1 text-[14px]", isDark ? "text-white/30" : "text-black/40")}>Height (px)</div>
+            <div className={"mb-1 text-[14px] text-[var(--text-3)]"}>Height (px)</div>
             <input
               type="number"
               className={input}
@@ -90,7 +90,7 @@ export default function ExportPanel({ state, theme, onChange, onExport }: Props)
       <div>
         <div className={cn(label, "flex items-baseline gap-1")}>
           Resolution —
-          <span className={cn("text-[14px] font-semibold normal-case tracking-normal", isDark ? "text-white/70" : "text-black/70")}>
+          <span className={"text-[14px] font-semibold normal-case tracking-normal text-[var(--text)]"}>
             {state.exportDpi} DPI
           </span>
         </div>
@@ -111,10 +111,8 @@ export default function ExportPanel({ state, theme, onChange, onExport }: Props)
               className={cn(
                 "h-[28px] rounded-[6px] border text-[15px] font-medium uppercase transition-all duration-150 active:scale-[0.94]",
                 state.exportFormat === fmt
-                  ? "border-violet-500 bg-violet-500/15 text-violet-400"
-                  : isDark
-                  ? "border-white/8 bg-white/4 text-white/35 hover:border-white/14"
-                  : "border-black/8 bg-black/3 text-black/40 hover:border-black/14",
+                  ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-2)]"
+                  : "border-[var(--border)] bg-[var(--raised)] text-[var(--text-2)] hover:border-[var(--border-hover)]",
               )}
               wrapperClassName="inline-flex items-center justify-center w-full"
               style={{ transitionTimingFunction: "cubic-bezier(0.23,1,0.32,1)" }}
@@ -135,16 +133,16 @@ export default function ExportPanel({ state, theme, onChange, onExport }: Props)
           ].map(({ v, l }, i) => (
             <div
               key={i}
-              className={cn("flex items-center gap-1 rounded-md border px-2 py-1 text-xs", isDark ? "border-white/8 bg-white/4 text-white/35" : "border-black/8 bg-black/3 text-black/40")}
+              className={"flex items-center gap-1 rounded-md border px-2 py-1 text-xs border-[var(--border)] bg-[var(--raised)] text-[var(--text-2)]"}
             >
-              <span className={isDark ? "font-medium text-white/70" : "font-medium text-black/70"}>{v}</span>
+              <span className={"font-medium text-[var(--text)]"}>{v}</span>
               {l && <span>{l}</span>}
             </div>
           ))}
         </div>
       </div>
 
-      <div className={cn("h-px", isDark ? "bg-white/6" : "bg-black/8")} />
+      <div className={"h-px bg-[var(--border)]"} />
 
       <GlassBtn
         onClick={onExport}
@@ -155,6 +153,27 @@ export default function ExportPanel({ state, theme, onChange, onExport }: Props)
         <Download size={12} />
         Download chart
       </GlassBtn>
+
+      {/* Secondary export routes — same chart/data, different destinations */}
+      <div className="grid grid-cols-3 gap-1.5">
+        {[
+          { label: "Copy", icon: <Copy size={12} />, onClick: onCopyChart, title: "Copy chart image to clipboard" },
+          { label: "PDF", icon: <FileText size={12} />, onClick: onExportPdf, title: "Export chart as a PDF" },
+          { label: "CSV", icon: <Table size={12} />, onClick: onExportCsv, title: "Download the edited dataset as CSV" },
+        ].map(({ label: lbl, icon, onClick, title }) => (
+          <GlassBtn
+            key={lbl}
+            onClick={onClick}
+            title={title}
+            className="flex h-8 items-center justify-center gap-1.5 rounded-[7px] border text-xs font-medium transition-all duration-150 active:scale-[0.97] border-[var(--border)] bg-[var(--raised)] text-[var(--text-2)] hover:border-[var(--border-hover)] hover:text-[var(--text)]"
+            wrapperClassName="inline-flex items-center justify-center gap-1.5 w-full"
+            style={{ transitionTimingFunction: "cubic-bezier(0.23,1,0.32,1)" }}
+          >
+            {icon}
+            {lbl}
+          </GlassBtn>
+        ))}
+      </div>
     </div>
   );
 }

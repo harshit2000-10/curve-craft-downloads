@@ -96,41 +96,16 @@ export const GlassBtn = React.forwardRef<HTMLButtonElement, GlassBtnProps>(
   ) => (
     <button
       ref={ref}
-      className={`relative overflow-hidden ${className}`}
-      style={{
-        boxShadow:
-          "0 2px 8px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.06)",
-        transitionTimingFunction: "cubic-bezier(0.175, 0.885, 0.32, 2.2)",
-        ...style,
-      }}
+      className={`group relative overflow-hidden ${className}`}
+      style={{ transitionTimingFunction: "cubic-bezier(0.175, 0.885, 0.32, 2.2)", ...style }}
       {...props}
     >
-      {/* Blur + distortion layer */}
-      <div
-        className="pointer-events-none absolute inset-0 z-0"
-        style={{
-          backdropFilter: "blur(3px)",
-          filter: "url(#glass-distortion)",
-          isolation: "isolate",
-          borderRadius: "inherit",
-        }}
-      />
-      {/* White glass overlay */}
-      <div
-        className="pointer-events-none absolute inset-0 z-10"
-        style={{ background: "rgba(255, 255, 255, 0.18)", borderRadius: "inherit" }}
-      />
-      {/* Inner highlight border */}
-      <div
-        className="pointer-events-none absolute inset-0 z-20"
-        style={{
-          boxShadow:
-            "inset 1px 1px 1px rgba(255, 255, 255, 0.45), inset -1px -1px 1px rgba(255, 255, 255, 0.15)",
-          borderRadius: "inherit",
-        }}
-      />
-      {/* Content — above all glass layers */}
-      <span className={`relative z-30 ${wrapperClassName}`}>{children}</span>
+      {/* Neon top glow */}
+      <span className="pointer-events-none absolute inset-x-0 inset-y-0 mx-auto h-px w-3/4 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-0 transition-all duration-500 ease-in-out group-hover:opacity-100" />
+      {/* Content */}
+      <span className={`relative ${wrapperClassName}`}>{children}</span>
+      {/* Neon bottom glow */}
+      <span className="pointer-events-none absolute -bottom-px inset-x-0 mx-auto h-px w-3/4 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-0 transition-all duration-500 ease-in-out group-hover:opacity-30" />
     </button>
   ),
 );

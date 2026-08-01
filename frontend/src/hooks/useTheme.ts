@@ -14,6 +14,7 @@ export function useTheme() {
     const root = document.documentElement;
     root.classList.remove("dark", "light");
     root.classList.add(theme);
+    root.setAttribute("data-theme", theme);
     localStorage.setItem("cc-theme", theme);
   }, [theme]);
 

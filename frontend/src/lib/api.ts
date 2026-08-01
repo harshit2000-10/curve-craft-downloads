@@ -1,4 +1,5 @@
 import Papa from "papaparse";
+import { isExcelFile } from "@/lib/fileTypes";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -6,6 +7,8 @@ export interface UploadResult {
   columns: string[];
   data: Record<string, unknown>[];
   shape: [number, number];
+  /** Set when an Excel file had more than one sheet — only the first was loaded. */
+  extraSheets?: { loaded: string; skipped: string[] };
 }
 
 export interface FormulaResult {
@@ -17,17 +20,24 @@ export interface FormulaResult {
 
 /** Parse a CSV, TSV, or Excel file entirely on the user's machine. */
 export async function uploadCSV(file: File): Promise<UploadResult> {
-  const name = file.name.toLowerCase();
-
   // Excel — load SheetJS lazily (heavy ~1 MB, only when needed)
-  if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
-    const XLSX = await import("xlsx");
+  if (isExcelFile(file.name)) {
+    const XLSX = await import("@e965/xlsx");
     const buffer = await file.arrayBuffer();
-    const workbook = XLSX.read(buffer);
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    // cellDates: true makes SheetJS hand back real JS Date objects for
+    // date-formatted cells instead of raw Excel serial numbers (e.g. 45870) —
+    // without it, a date column silently reads as a meaningless big number.
+    const workbook = XLSX.read(buffer, { cellDates: true });
+    const [firstName, ...restNames] = workbook.SheetNames;
+    const sheet = workbook.Sheets[firstName];
     const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
     const columns = Object.keys(data[0] ?? {});
-    return { columns, data, shape: [data.length, columns.length] };
+    return {
+      columns, data, shape: [data.length, columns.length],
+      // Only the first sheet is ever read — this is what makes that fact visible
+      // instead of silently discarding the rest.
+      ...(restNames.length ? { extraSheets: { loaded: firstName, skipped: restNames } } : {}),
+    };
   }
 
   // CSV / TSV — PapaParse auto-detects delimiter
