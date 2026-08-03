@@ -8,13 +8,15 @@ import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
 import PanelDivider from "@/components/PanelDivider";
 import ChartArea from "@/components/ChartArea";
+import MobileApp from "@/components/mobile/MobileApp";
 import { usePanelWidth } from "@/hooks/usePanelWidth";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import Papa from "papaparse";
 import { uploadCSV, applyFormula } from "@/lib/api";
 import { PAL } from "@/lib/palette";
 import { CHART_TYPE_ORDER, cycleChartType } from "@/lib/chartTypes";
 import { isNumericCol, toNum } from "@/lib/analysis";
-import { deleteColumn, renameColumn } from "@/lib/cleaning";
+import { deleteColumn, renameColumn, fillBlanksWithMean } from "@/lib/cleaning";
 import {
   saveProject, loadProject, PROJECT_EXTENSION,
   copyChartToClipboard, downloadChartPdf, downloadDataCsv,
@@ -311,6 +313,14 @@ export default function App() {
     handleChange({ data });
   }
 
+  function handleFillBlanks(col: string) {
+    if (!appState) return;
+    const patch = fillBlanksWithMean(appState, col);
+    if (Object.keys(patch).length === 0) { showToast(`No blank cells in "${col}"`); return; }
+    handleChange(patch);
+    showToast(`Filled blanks in "${col}" with the column mean`);
+  }
+
   function handleDeleteRow(rowIndex: number) {
     if (!appState) return;
     handleChange({ data: appState.data.filter((_, i) => i !== rowIndex) });
@@ -386,6 +396,7 @@ export default function App() {
   }, [appState]);
 
   const isDark = theme === "dark";
+  const isMobile = useIsMobile();
 
   return (
     <div className={cn("h-full", isDark ? "dark" : "light")}>
@@ -405,7 +416,31 @@ export default function App() {
         }}
       />
 
-      {!appState ? (
+      {isMobile ? (
+        <MobileApp
+          appState={appState}
+          theme={theme}
+          onFile={loadFile}
+          onSample={loadSample}
+          onCreateData={handleCreateData}
+          onToggleTheme={toggleTheme}
+          onOpenProject={() => projectInputRef.current?.click()}
+          onReset={() => setAppState(null)}
+          onUndo={handleUndo}
+          onChange={handleChange}
+          onAddColumn={handleAddColumn}
+          onDeleteColumn={handleDeleteColumn}
+          onRenameColumn={handleRenameColumn}
+          onFillBlanks={handleFillBlanks}
+          onEditCell={handleEditCell}
+          onDeleteRow={handleDeleteRow}
+          onDeleteRows={handleDeleteRows}
+          onExport={handleExport}
+          onCopyChart={handleCopyChart}
+          onExportPdf={handleExportPdf}
+          onExportCsv={handleExportCsv}
+        />
+      ) : !appState ? (
         <UploadScreen
           theme={theme}
           onFile={loadFile}

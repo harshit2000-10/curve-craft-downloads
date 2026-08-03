@@ -146,9 +146,13 @@ interface Props {
   /** Side-panel width. Only used as a signal that the chart's container changed. */
   panelWidth: number;
   onChange: (patch: Partial<AppState>) => void;
+  /** Drops the title/subtitle bar and data-quality strip and tightens padding,
+   * for docking a small preview (e.g. the mobile Style/Export tabs' 216px
+   * strip) where those controls have no room and duplicate the Chart tab. */
+  compact?: boolean;
 }
 
-export default function ChartArea({ state, theme, panelWidth, onChange }: Props) {
+export default function ChartArea({ state, theme, panelWidth, onChange, compact = false }: Props) {
   const chartRef = useRef<HTMLDivElement>(null);
   const isDark = theme === "dark";
 
@@ -468,6 +472,7 @@ export default function ChartArea({ state, theme, panelWidth, onChange }: Props)
       style={{ background: th.paper }}
     >
       {/* Title / subtitle bar */}
+      {!compact && (
       <div
         className="flex flex-shrink-0 flex-col gap-0.5 border-b px-5 py-3 backdrop-blur-sm transition-colors duration-200"
         style={{
@@ -506,9 +511,10 @@ export default function ChartArea({ state, theme, panelWidth, onChange }: Props)
           onChange={(e) => onChange({ chartSubtitle: e.target.value })}
         />
       </div>
+      )}
 
       {/* Analysis / data-quality status strip */}
-      {(summary.transformed || droppedValues > 0 || logHiddenCount > 0) && (
+      {!compact && (summary.transformed || droppedValues > 0 || logHiddenCount > 0) && (
         <div
           className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b px-5 py-1.5 text-[11px]"
           style={{
@@ -556,8 +562,8 @@ export default function ChartArea({ state, theme, panelWidth, onChange }: Props)
       )}
 
       {/* Chart */}
-      <div className="relative flex-1 p-4">
-        {state.editMode !== "off" && (
+      <div className={cn("relative flex-1", compact ? "p-1.5" : "p-4")}>
+        {!compact && state.editMode !== "off" && (
           <div
             className="pointer-events-none absolute left-1/2 top-6 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full border px-3.5 py-1.5 text-[11px] font-medium shadow-lg"
             style={{
@@ -575,7 +581,7 @@ export default function ChartArea({ state, theme, panelWidth, onChange }: Props)
               : "Add mode — click on the plot to add a point"}
           </div>
         )}
-        <div ref={chartRef} id="cc-chart" className="mx-auto h-[90%] w-[90%]" />
+        <div ref={chartRef} id="cc-chart" className={cn("mx-auto", compact ? "h-full w-full" : "h-[90%] w-[90%]")} />
       </div>
     </div>
   );

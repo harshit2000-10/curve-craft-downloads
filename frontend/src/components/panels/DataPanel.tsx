@@ -28,7 +28,7 @@ interface Props {
   onAddColumn: (name: string, expr: string) => void;
 }
 
-const SCI_FUNS: { label: string; insert: string; title: string }[] = [
+export const SCI_FUNS: { label: string; insert: string; title: string }[] = [
   { label: "sin",   insert: "Math.sin(",   title: "Sine" },
   { label: "cos",   insert: "Math.cos(",   title: "Cosine" },
   { label: "tan",   insert: "Math.tan(",   title: "Tangent" },

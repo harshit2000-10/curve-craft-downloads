@@ -1,4 +1,4 @@
-import { isNumericCol } from "@/lib/analysis";
+import { isNumericCol, toNum } from "@/lib/analysis";
 import type { AppState } from "@/types";
 
 /**
@@ -53,6 +53,27 @@ export function deleteColumn(state: AppState, col: string): Partial<AppState> {
   }
 
   return { cols, data, legend, xCol, yCols, secondaryYCols, editTargetCol, bubbleSizeCol, filters, refLines, errorBars };
+}
+
+/** Fills blank cells in a numeric column with that column's mean — leaves
+ * non-blank cells (numeric or not) untouched. */
+export function fillBlanksWithMean(state: AppState, col: string): Partial<AppState> {
+  if (!state.cols.includes(col)) return {};
+  const nums: number[] = [];
+  for (const row of state.data) {
+    const v = row[col];
+    if (v == null || v === "") continue;
+    const n = toNum(v);
+    if (n !== null) nums.push(n);
+  }
+  if (!nums.length) return {};
+  const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
+
+  const data = state.data.map((row) => {
+    const v = row[col];
+    return v == null || v === "" ? { ...row, [col]: avg } : row;
+  });
+  return { data };
 }
 
 export function renameColumn(state: AppState, oldName: string, rawNewName: string): Partial<AppState> {

@@ -201,3 +201,30 @@ export function stdDev(ns: number[]): number {
 export function stdError(ns: number[]): number {
   return ns.length < 2 ? 0 : stdDev(ns) / Math.sqrt(ns.length);
 }
+
+export interface ColumnStats {
+  min: number;
+  max: number;
+  mean: number;
+  /** Count of values more than 2 standard deviations from the mean. */
+  outliers: number;
+  blanks: number;
+}
+
+/** Summary stats for the mobile Clean tab's per-column cards. Null for
+ * non-numeric columns — there's nothing to summarize. */
+export function columnStats(data: Record<string, unknown>[], col: string, toNum: (v: unknown) => number | null): ColumnStats | null {
+  let blanks = 0;
+  const nums: number[] = [];
+  for (const row of data) {
+    const v = row[col];
+    if (v == null || v === "") { blanks++; continue; }
+    const n = toNum(v);
+    if (n !== null) nums.push(n);
+  }
+  if (!nums.length) return null;
+  const m = mean(nums);
+  const sd = stdDev(nums);
+  const outliers = sd > 0 ? nums.filter((n) => Math.abs(n - m) > 2 * sd).length : 0;
+  return { min: nums.reduce((a, b) => (b < a ? b : a)), max: nums.reduce((a, b) => (b > a ? b : a)), mean: m, outliers, blanks };
+}
