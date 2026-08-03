@@ -274,7 +274,7 @@ export function buildAnnotations(
     out.push({
       xref: "paper", yref: "paper",
       x: pos.xanchor === "left" ? pos.x + pad : pos.x - pad,
-      y: pos.yanchor === "bottom" ? pos.y : pos.y - pad,
+      y: pos.yanchor === "bottom" ? pos.y + pad : pos.y - pad,
       xanchor: pos.xanchor, yanchor: pos.yanchor,
       ...(sharesLegendCorner ? { yshift: (pos.yanchor === "bottom" ? 1 : -1) * (20 * legendRows + 22) } : {}),
       text: stats.join("<br>"),

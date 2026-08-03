@@ -195,6 +195,11 @@ export default function App() {
     showToast("Loaded sample dataset — 12 rows · 5 cols");
   }
 
+  function handleCreateData(data: Record<string, unknown>[]) {
+    setAppState(initState(data, "custom_data.csv", theme));
+    showToast(`Created ${data.length.toLocaleString()} row${data.length === 1 ? "" : "s"} · ${Object.keys(data[0] ?? {}).length} cols`);
+  }
+
   function handleSaveProject() {
     if (!appState) return;
     try {
@@ -241,7 +246,11 @@ export default function App() {
   function handleUndo() {
     if (!appState?.editHistory.length) { showToast("Nothing to undo"); return; }
     const prev = appState.editHistory[appState.editHistory.length - 1];
-    handleChange({ data: prev, editHistory: appState.editHistory.slice(0, -1) });
+    // Recompute cols from the restored data rather than trusting the current
+    // ones — editHistory only stores rows to stay light, so if anything that
+    // changes column count/names ever starts pushing to it, this keeps cols
+    // from silently drifting out of sync with what undo just restored.
+    handleChange({ data: prev, cols: Object.keys(prev[0] ?? {}), editHistory: appState.editHistory.slice(0, -1) });
     showToast("Undid last edit");
   }
 
@@ -401,6 +410,7 @@ export default function App() {
           theme={theme}
           onFile={loadFile}
           onSample={loadSample}
+          onCreateData={handleCreateData}
           onToggleTheme={toggleTheme}
           onOpenProject={() => projectInputRef.current?.click()}
         />

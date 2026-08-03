@@ -2,6 +2,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { GridPattern } from "@/components/ui/grid-pattern";
 import FileUpload from "@/components/ui/file-upload";
+import DataBuilder from "@/components/ui/DataBuilder";
 import { GlassBtn } from "@/components/ui/liquid-glass";
 import RotatingText from "@/components/ui/RotatingText";
 import type { AppTheme } from "@/types";
@@ -12,10 +13,12 @@ interface Props {
   onSample: () => void;
   onToggleTheme: () => void;
   onOpenProject: () => void;
+  onCreateData: (data: Record<string, unknown>[]) => void;
 }
 
-export default function UploadScreen({ theme, onFile, onSample, onToggleTheme, onOpenProject }: Props) {
+export default function UploadScreen({ theme, onFile, onSample, onToggleTheme, onOpenProject, onCreateData }: Props) {
   const isDark = theme === "dark";
+  const [building, setBuilding] = useState(false);
   const [agreed, setAgreed] = useState(() => {
     // Reading can throw under storage-restricted browsers (Brave shields set to
     // block storage, Safari private mode, strict cookie policies) — fall back to
@@ -123,7 +126,15 @@ export default function UploadScreen({ theme, onFile, onSample, onToggleTheme, o
 
         {/* Upload zone — blurred + unclickable until agreed */}
         <div className={cn("relative w-full transition-all duration-300", !agreed && "pointer-events-none select-none")}>
-          <FileUpload onFileAccepted={onFile} />
+          {building ? (
+            <DataBuilder
+              isDark={isDark}
+              onCreate={(data) => { onCreateData(data); setBuilding(false); }}
+              onCancel={() => setBuilding(false)}
+            />
+          ) : (
+            <FileUpload onFileAccepted={onFile} />
+          )}
           {/* Overlay when not agreed */}
           {!agreed && (
             <div
@@ -176,6 +187,27 @@ export default function UploadScreen({ theme, onFile, onSample, onToggleTheme, o
             wrapperClassName="inline-flex items-center gap-1.5"
           >
             Open project
+          </GlassBtn>
+
+          <GlassBtn
+            onClick={agreed ? () => setBuilding((b) => !b) : undefined}
+            title="Type in your own rows and columns instead of uploading a file"
+            className={cn(
+              "rounded-lg border px-4 py-2 text-xs font-medium transition-all duration-150",
+              agreed
+                ? building
+                  ? isDark
+                    ? "border-violet-400/40 text-violet-300"
+                    : "border-violet-500/40 text-violet-600"
+                  : isDark
+                  ? "border-white/10 text-white/40 hover:border-white/20 hover:text-white/60 active:scale-[0.97]"
+                  : "border-black/10 text-black/40 hover:border-black/20 hover:text-black/60 active:scale-[0.97]"
+                : "pointer-events-none opacity-30 " + (isDark ? "border-white/6 text-white/25" : "border-black/6 text-black/25"),
+            )}
+            style={{ transitionTimingFunction: "cubic-bezier(0.23,1,0.32,1)" }}
+            wrapperClassName="inline-flex items-center gap-1.5"
+          >
+            Create your own data
           </GlassBtn>
         </div>
 

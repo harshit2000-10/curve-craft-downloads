@@ -98,7 +98,14 @@ export default function FileUpload({
     setIsDragging(true);
   };
 
-  const onDragLeave = () => setIsDragging(false);
+  const onDragLeave = (e: DragEvent) => {
+    // dragleave bubbles and fires when the pointer moves onto a child element
+    // (the icon, the heading text) too, not just when it actually leaves the
+    // zone — relatedTarget is where the pointer is going, so a target still
+    // inside the zone means this isn't a real exit.
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDragging(false);
+  };
 
   const onSelect = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) handleFiles(e.target.files);
