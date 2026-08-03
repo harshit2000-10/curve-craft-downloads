@@ -385,29 +385,47 @@ export default function LandingPage() {
         .lp-reveal { opacity: 0; transform: translateY(34px); transition: opacity 0.9s cubic-bezier(.16,1,.3,1), transform 0.9s cubic-bezier(.16,1,.3,1); }
         .lp-reveal.in { opacity: 1; transform: translateY(0); }
         .tiltcard { transition: transform 0.25s cubic-bezier(.16,1,.3,1), box-shadow 0.4s, border-color 0.4s; transform-style: preserve-3d; }
+
+        :root { --lp-pad: 64px; }
+        @media (max-width: 860px) {
+          :root { --lp-pad: 20px; }
+          .lp-nav { padding-left: 20px !important; padding-right: 20px !important; }
+          .lp-nav-links a { display: none !important; }
+          .lp-nav-links { gap: 14px !important; }
+          .lp-hero { grid-template-columns: 1fr !important; min-height: auto !important; padding-top: 110px !important; gap: 44px !important; }
+          .lp-hero-visual { height: 320px !important; }
+          .lp-stats { flex-wrap: wrap !important; row-gap: 18px !important; }
+          .lp-features-grid { grid-template-columns: 1fr !important; }
+          .lp-features-grid > div { grid-column: auto !important; grid-row: auto !important; }
+          .lp-how-grid { grid-template-columns: 1fr !important; gap: 44px !important; }
+          .lp-how-line { display: none !important; }
+          .lp-demo-grid { grid-template-columns: 1fr !important; }
+          .lp-demo-card { padding: 22px !important; }
+          .lp-footer { justify-content: center !important; text-align: center !important; }
+        }
       `}</style>
 
       {/* bg glow */}
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(900px 600px at 70% -5%, rgba(124,108,248,0.22), transparent 60%), radial-gradient(700px 500px at 10% 30%, rgba(94,234,212,0.10), transparent 55%)" }} />
 
       {/* NAV */}
-      <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 44px", backdropFilter: "blur(14px)", background: "rgba(7,7,13,0.55)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+      <nav className="lp-nav" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 44px", backdropFilter: "blur(14px)", background: "rgba(7,7,13,0.55)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 9, background: "linear-gradient(135deg,#7c5cff,#9d7cff)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 22px rgba(124,108,248,0.55)" }}>
+          <div style={{ width: 34, height: 34, borderRadius: 9, background: "linear-gradient(135deg,#7c5cff,#9d7cff)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 22px rgba(124,108,248,0.55)", flexShrink: 0 }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 17c3-1 4-9 7-9s4 7 7 4" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" /><circle cx="3" cy="17" r="1.6" fill="#fff" /><circle cx="17" cy="12" r="1.6" fill="#fff" /></svg>
           </div>
-          <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 19, letterSpacing: "-0.01em" }}>Curve&nbsp;Craft</span>
+          <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 19, letterSpacing: "-0.01em", whiteSpace: "nowrap" }}>Curve&nbsp;Craft</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 34, fontSize: 14.5, color: "#b9b8d0" }}>
+        <div className="lp-nav-links" style={{ display: "flex", alignItems: "center", gap: 34, fontSize: 14.5, color: "#b9b8d0" }}>
           <a href="#features" style={{ color: "inherit", textDecoration: "none" }}>Features</a>
           <a href="#how" style={{ color: "inherit", textDecoration: "none" }}>How it works</a>
           <a href="#demo" style={{ color: "inherit", textDecoration: "none" }}>Demo</a>
-          <button onClick={() => navigate("/app")} style={{ color: "#07070d", background: "linear-gradient(135deg,#7c5cff,#9d7cff)", padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 600, fontSize: 14.5, fontFamily: "'Plus Jakarta Sans',sans-serif", boxShadow: "0 6px 20px rgba(124,108,248,0.35)" }}>Open app</button>
+          <button onClick={() => navigate("/app")} style={{ color: "#07070d", background: "linear-gradient(135deg,#7c5cff,#9d7cff)", padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 600, fontSize: 14.5, fontFamily: "'Plus Jakarta Sans',sans-serif", boxShadow: "0 6px 20px rgba(124,108,248,0.35)", whiteSpace: "nowrap" }}>Open app</button>
         </div>
       </nav>
 
       {/* HERO */}
-      <section style={{ position: "relative", zIndex: 1, minHeight: "100vh", display: "grid", gridTemplateColumns: "1.05fr 1fr", alignItems: "center", gap: 30, padding: "140px 64px 60px" }}>
+      <section className="lp-hero" style={{ position: "relative", zIndex: 1, minHeight: "100vh", display: "grid", gridTemplateColumns: "1.05fr 1fr", alignItems: "center", gap: 30, padding: "140px var(--lp-pad) 60px" }}>
         <div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "7px 14px", borderRadius: 100, border: "1px solid rgba(124,108,248,0.32)", background: "rgba(124,108,248,0.10)", fontSize: 13, color: "#c9c2ff", marginBottom: 26 }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#5eead4", boxShadow: "0 0 10px #5eead4", animation: "pulseGlow 2s ease-in-out infinite", display: "inline-block" }} />
@@ -423,7 +441,7 @@ export default function LandingPage() {
             Craft a chart
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#07070d" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
-          <div style={{ display: "flex", gap: 30, marginTop: 46 }}>
+          <div className="lp-stats" style={{ display: "flex", gap: 30, marginTop: 46 }}>
             <div><div style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 24, fontWeight: 700, color: "#fff" }}>12+</div><div style={{ fontSize: 13, color: "#8b8aa6" }}>chart types</div></div>
             <div style={{ width: 1, background: "rgba(255,255,255,0.1)" }} />
             <div><div style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 24, fontWeight: 700, color: "#fff" }}>0</div><div style={{ fontSize: 13, color: "#8b8aa6" }}>bytes uploaded</div></div>
@@ -431,7 +449,7 @@ export default function LandingPage() {
             <div><div style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 24, fontWeight: 700, color: "#fff" }}>~2s</div><div style={{ fontSize: 13, color: "#8b8aa6" }}>CSV to chart</div></div>
           </div>
         </div>
-        <div ref={stageRef} style={{ position: "relative", height: 560, width: "100%" }}>
+        <div ref={stageRef} className="lp-hero-visual" style={{ position: "relative", height: 560, width: "100%" }}>
           <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
           <div style={{ position: "absolute", left: "8%", top: "12%", padding: "11px 15px", borderRadius: 13, background: "rgba(16,14,30,0.72)", border: "1px solid rgba(124,108,248,0.3)", backdropFilter: "blur(10px)", boxShadow: "0 12px 40px rgba(0,0,0,0.4)", animation: "floaty 6s ease-in-out infinite", pointerEvents: "none" }}>
             <div style={{ fontSize: 11, color: "#8b8aa6", marginBottom: 3 }}>Trend · Q4</div>
@@ -445,12 +463,12 @@ export default function LandingPage() {
       </section>
 
       {/* FEATURES */}
-      <section id="features" style={{ position: "relative", zIndex: 1, padding: "90px 64px 40px", maxWidth: 1240, margin: "0 auto" }}>
+      <section id="features" style={{ position: "relative", zIndex: 1, padding: "90px var(--lp-pad) 40px", maxWidth: 1240, margin: "0 auto" }}>
         <div className="lp-reveal" style={{ textAlign: "center", marginBottom: 54 }}>
           <div style={{ fontSize: 13, letterSpacing: "0.18em", textTransform: "uppercase", color: "#7c5cff", fontWeight: 600, marginBottom: 14 }}>Why Curve Craft</div>
           <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: "clamp(30px,3.6vw,46px)", fontWeight: 700, letterSpacing: "-0.02em", margin: 0 }}>Everything you need, nothing you don't</h2>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 22, perspective: 1200 }}>
+        <div className="lp-features-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 22, perspective: 1200 }}>
           <div className="lp-reveal tiltcard" data-tilt="" style={{ gridRow: "span 2", padding: 30, borderRadius: 20, background: "linear-gradient(165deg,rgba(124,108,248,0.14),rgba(20,18,38,0.6))", border: "1px solid rgba(124,108,248,0.22)", boxShadow: "0 18px 50px rgba(0,0,0,0.34)" }}>
             <div style={{ width: 50, height: 50, borderRadius: 14, background: "rgba(124,108,248,0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 22 }}>
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 4-6" stroke="#9d7cff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -492,13 +510,13 @@ export default function LandingPage() {
       </section>
 
       {/* HOW IT WORKS */}
-      <section id="how" style={{ position: "relative", zIndex: 1, padding: "80px 64px", maxWidth: 1240, margin: "0 auto" }}>
+      <section id="how" style={{ position: "relative", zIndex: 1, padding: "80px var(--lp-pad)", maxWidth: 1240, margin: "0 auto" }}>
         <div className="lp-reveal" style={{ textAlign: "center", marginBottom: 58 }}>
           <div style={{ fontSize: 13, letterSpacing: "0.18em", textTransform: "uppercase", color: "#5eead4", fontWeight: 600, marginBottom: 14 }}>Three steps</div>
           <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: "clamp(30px,3.6vw,46px)", fontWeight: 700, letterSpacing: "-0.02em", margin: 0 }}>From spreadsheet to chart</h2>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 24, position: "relative" }}>
-          <div style={{ position: "absolute", top: 36, left: "16%", right: "16%", height: 2, background: "linear-gradient(90deg,transparent,rgba(124,108,248,0.4),rgba(94,234,212,0.4),transparent)", zIndex: 0 }} />
+        <div className="lp-how-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 24, position: "relative" }}>
+          <div className="lp-how-line" style={{ position: "absolute", top: 36, left: "16%", right: "16%", height: 2, background: "linear-gradient(90deg,transparent,rgba(124,108,248,0.4),rgba(94,234,212,0.4),transparent)", zIndex: 0 }} />
           {[
             { num: "1", title: "Drop your CSV", desc: "Drag a file in or paste raw data. Columns are detected automatically.", bg: "linear-gradient(135deg,#7c5cff,#9d7cff)", shadow: "0 0 30px rgba(124,108,248,0.5)" },
             { num: "2", title: "Pick & tune", desc: "Choose a chart type, map axes, then tweak colors, labels and scale.", bg: "linear-gradient(135deg,#6f8bff,#5eead4)", shadow: "0 0 30px rgba(94,234,212,0.4)" },
@@ -514,10 +532,10 @@ export default function LandingPage() {
       </section>
 
       {/* DEMO */}
-      <section id="demo" style={{ position: "relative", zIndex: 1, padding: "70px 64px 90px", maxWidth: 1240, margin: "0 auto" }}>
-        <div className="lp-reveal" style={{ borderRadius: 26, padding: 42, background: "linear-gradient(160deg,rgba(20,18,38,0.9),rgba(12,11,24,0.95))", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 30px 80px rgba(0,0,0,0.5)", overflow: "hidden", position: "relative" }}>
+      <section id="demo" style={{ position: "relative", zIndex: 1, padding: "70px var(--lp-pad) 90px", maxWidth: 1240, margin: "0 auto" }}>
+        <div className="lp-reveal lp-demo-card" style={{ borderRadius: 26, padding: 42, background: "linear-gradient(160deg,rgba(20,18,38,0.9),rgba(12,11,24,0.95))", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 30px 80px rgba(0,0,0,0.5)", overflow: "hidden", position: "relative" }}>
           <div style={{ position: "absolute", top: "-40%", right: "-10%", width: 480, height: 480, borderRadius: "50%", background: "radial-gradient(circle,rgba(124,108,248,0.18),transparent 70%)", pointerEvents: "none" }} />
-          <div style={{ display: "grid", gridTemplateColumns: "0.85fr 1.15fr", gap: 40, alignItems: "center", position: "relative" }}>
+          <div className="lp-demo-grid" style={{ display: "grid", gridTemplateColumns: "0.85fr 1.15fr", gap: 40, alignItems: "center", position: "relative" }}>
             <div>
               <div style={{ fontSize: 13, letterSpacing: "0.18em", textTransform: "uppercase", color: "#7c5cff", fontWeight: 600, marginBottom: 14 }}>Live preview</div>
               <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: "clamp(26px,2.8vw,38px)", fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 16px" }}>Beautiful charts, zero setup</h2>
@@ -559,7 +577,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section style={{ position: "relative", zIndex: 1, padding: "30px 64px 0", maxWidth: 1240, margin: "0 auto" }}>
+      <section style={{ position: "relative", zIndex: 1, padding: "30px var(--lp-pad) 0", maxWidth: 1240, margin: "0 auto" }}>
         <div className="lp-reveal" style={{ textAlign: "center", borderRadius: 26, padding: "64px 40px", background: "linear-gradient(135deg,rgba(124,108,248,0.18),rgba(94,234,212,0.10))", border: "1px solid rgba(124,108,248,0.25)", boxShadow: "0 30px 80px rgba(0,0,0,0.45)" }}>
           <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: "clamp(30px,4vw,52px)", fontWeight: 700, letterSpacing: "-0.025em", margin: "0 0 18px" }}>Turn any CSV into a<br />publication-ready graph</h2>
           <p style={{ fontSize: 17, color: "#c4c3dc", margin: "0 0 32px" }}>Free, open-source, and running entirely in your browser.</p>
@@ -571,7 +589,7 @@ export default function LandingPage() {
       </section>
 
       {/* FOOTER */}
-      <footer style={{ position: "relative", zIndex: 1, padding: "50px 64px", maxWidth: 1240, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid rgba(255,255,255,0.07)", marginTop: 60, flexWrap: "wrap", gap: 18 }}>
+      <footer className="lp-footer" style={{ position: "relative", zIndex: 1, padding: "50px var(--lp-pad)", maxWidth: 1240, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid rgba(255,255,255,0.07)", marginTop: 60, flexWrap: "wrap", gap: 18 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
           <div style={{ width: 30, height: 30, borderRadius: 8, background: "linear-gradient(135deg,#7c5cff,#9d7cff)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M3 17c3-1 4-9 7-9s4 7 7 4" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" /></svg>
