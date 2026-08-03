@@ -35,24 +35,35 @@ export default function PanelDivider({ width, onWidth, onCommit, onReset }: Prop
     };
   }, [dragging]);
 
+  // Track the drag on `window` rather than relying on this element's own
+  // pointermove + setPointerCapture. The hit area is only 5px wide — any real
+  // drag leaves it within a frame or two, and pointer capture redirecting
+  // events back here isn't reliable across every browser/target combo (e.g.
+  // the chart's own SVG/canvas layer can end up eating the move). Listening
+  // on window guarantees delivery regardless of where the cursor actually is.
+  useEffect(() => {
+    if (!dragging) return;
+    function onMove(e: PointerEvent) {
+      const left = ref.current?.closest("main")?.getBoundingClientRect().left ?? 0;
+      onWidth(e.clientX - left);
+    }
+    function onUp() {
+      setDragging(false);
+      onCommit();
+    }
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+  }, [dragging, onWidth, onCommit]);
+
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     e.preventDefault();
-    ref.current?.setPointerCapture(e.pointerId);
     setDragging(true);
-  }
-
-  function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
-    if (!dragging) return;
-    // Measure from <main>'s left edge rather than assuming the panel starts at x=0.
-    const left = ref.current?.parentElement?.getBoundingClientRect().left ?? 0;
-    onWidth(e.clientX - left);
-  }
-
-  function endDrag(e: React.PointerEvent<HTMLDivElement>) {
-    if (!dragging) return;
-    ref.current?.releasePointerCapture(e.pointerId);
-    setDragging(false);
-    onCommit();
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
@@ -73,14 +84,17 @@ export default function PanelDivider({ width, onWidth, onCommit, onReset }: Prop
       aria-valuemax={PANEL_MAX}
       tabIndex={0}
       title="Drag to resize · double-click to reset"
-      className="group relative z-20 w-[5px] flex-shrink-0 cursor-col-resize touch-none outline-none"
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={endDrag}
-      onPointerCancel={endDrag}
-      onDoubleClick={onReset}
+      className="group relative z-20 h-full w-[5px] flex-shrink-0 outline-none"
       onKeyDown={handleKeyDown}
     >
+      {/* Real cursors are never pixel-perfect on a 5px strip — this extends the
+          actual grabbable area well past the visible rule (~17px total) without
+          widening the layout box the flex row accounts for. */}
+      <div
+        className="absolute inset-y-0 -left-2 -right-2 cursor-col-resize touch-none"
+        onPointerDown={handlePointerDown}
+        onDoubleClick={onReset}
+      />
       <span
         aria-hidden
         className={cn(

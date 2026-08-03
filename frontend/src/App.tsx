@@ -13,7 +13,8 @@ import Papa from "papaparse";
 import { uploadCSV, applyFormula } from "@/lib/api";
 import { PAL } from "@/lib/palette";
 import { CHART_TYPE_ORDER, cycleChartType } from "@/lib/chartTypes";
-import { isNumericCol } from "@/lib/analysis";
+import { isNumericCol, toNum } from "@/lib/analysis";
+import { deleteColumn, renameColumn } from "@/lib/cleaning";
 import {
   saveProject, loadProject, PROJECT_EXTENSION,
   copyChartToClipboard, downloadChartPdf, downloadDataCsv,
@@ -266,6 +267,53 @@ export default function App() {
       .catch((e: Error) => showToast(`Formula error: ${e.message}`));
   }
 
+  function handleDeleteColumn(col: string) {
+    if (!appState) return;
+    try {
+      handleChange(deleteColumn(appState, col));
+      showToast(`Column "${col}" deleted`);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Couldn't delete column");
+    }
+  }
+
+  function handleRenameColumn(oldName: string, newName: string) {
+    if (!appState) return;
+    try {
+      const patch = renameColumn(appState, oldName, newName);
+      if (Object.keys(patch).length === 0) return;
+      handleChange(patch);
+      showToast(`Renamed "${oldName}" → "${newName}"`);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Couldn't rename column");
+    }
+  }
+
+  function handleEditCell(rowIndex: number, col: string, rawValue: string) {
+    if (!appState) return;
+    // Keep a numeric column numeric so it stays plottable — a cell that was
+    // "142" shouldn't turn the whole column into text just because it got
+    // clicked and re-typed. Falls back to the raw string when it doesn't
+    // parse (or the column was already text), same rule toNum() uses elsewhere.
+    const wasNumeric = isNumericCol(appState.data, col);
+    const parsed = toNum(rawValue);
+    const value = wasNumeric && parsed !== null ? parsed : rawValue;
+    const data = appState.data.map((row, i) => (i === rowIndex ? { ...row, [col]: value } : row));
+    handleChange({ data });
+  }
+
+  function handleDeleteRow(rowIndex: number) {
+    if (!appState) return;
+    handleChange({ data: appState.data.filter((_, i) => i !== rowIndex) });
+  }
+
+  function handleDeleteRows(rowIndices: number[]) {
+    if (!appState || rowIndices.length === 0) return;
+    const toDelete = new Set(rowIndices);
+    handleChange({ data: appState.data.filter((_, i) => !toDelete.has(i)) });
+    showToast(`Deleted ${rowIndices.length} row${rowIndices.length === 1 ? "" : "s"}`);
+  }
+
   function handleExport() {
     if (!appState) return;
     if (!window.Plotly) { showToast("Chart engine not ready — try again in a moment"); return; }
@@ -389,6 +437,11 @@ export default function App() {
               onClose={() => setPanelOpen(false)}
               onChange={handleChange}
               onAddColumn={handleAddColumn}
+              onDeleteColumn={handleDeleteColumn}
+              onRenameColumn={handleRenameColumn}
+              onEditCell={handleEditCell}
+              onDeleteRow={handleDeleteRow}
+              onDeleteRows={handleDeleteRows}
               onExport={handleExport}
               onCopyChart={handleCopyChart}
               onExportPdf={handleExportPdf}

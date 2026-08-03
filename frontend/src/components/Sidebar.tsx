@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { GlassBtn } from "@/components/ui/liquid-glass";
 import ChartPanel from "@/components/panels/ChartPanel";
 import DataPanel from "@/components/panels/DataPanel";
+import CleanPanel from "@/components/panels/CleanPanel";
 import StylePanel from "@/components/panels/StylePanel";
 import ExportPanel from "@/components/panels/ExportPanel";
 import AnalysisPanel from "@/components/panels/AnalysisPanel";
@@ -11,12 +12,13 @@ import { CreditCard } from "@/components/ui/social-card";
 import { easeOut } from "@/components/panels/ui";
 import type { AppState, AppTheme } from "@/types";
 
-type Tab = "chart" | "data" | "analysis" | "style" | "export";
+type Tab = "chart" | "data" | "clean" | "analysis" | "style" | "export";
 
 /** Vertical icon rail. Icon paths are the 24×24 stroke paths from the design handoff. */
 const TABS: { id: Tab; label: string; d: string }[] = [
   { id: "chart",    label: "Chart",    d: "M4 19h16M7 15l3-4 3 2 4-6" },
   { id: "data",     label: "Data",     d: "M4 5h16v14H4zM4 10h16M10 5v14" },
+  { id: "clean",    label: "Clean",    d: "M5 3h9l5 5v13H5zM14 3v5h5M9 12l2 2 4-4" },
   { id: "analysis", label: "Analysis", d: "M4 18l5-7 4 3 6-8" },
   { id: "style",    label: "Style",    d: "M12 3s6 7 6 11a6 6 0 1 1-12 0c0-4 6-11 6-11z" },
   { id: "export",   label: "Save",     d: "M5 4h11l3 3v13H5zM8 4v4h6V4M8 20v-6h8v6" },
@@ -35,6 +37,11 @@ interface Props {
   onClose: () => void;
   onChange: (patch: Partial<AppState>) => void;
   onAddColumn: (name: string, expr: string) => void;
+  onDeleteColumn: (col: string) => void;
+  onRenameColumn: (oldName: string, newName: string) => void;
+  onEditCell: (rowIndex: number, col: string, rawValue: string) => void;
+  onDeleteRow: (rowIndex: number) => void;
+  onDeleteRows: (rowIndices: number[]) => void;
   onExport: () => void;
   onCopyChart: () => void;
   onExportPdf: () => void;
@@ -42,7 +49,8 @@ interface Props {
 }
 
 export default function Sidebar({
-  state, theme, width, open, onClose, onChange, onAddColumn, onExport, onCopyChart, onExportPdf, onExportCsv,
+  state, theme, width, open, onClose, onChange, onAddColumn, onDeleteColumn, onRenameColumn,
+  onEditCell, onDeleteRow, onDeleteRows, onExport, onCopyChart, onExportPdf, onExportCsv,
 }: Props) {
   const [tab, setTab] = useState<Tab>("chart");
   const active = TABS.find((t) => t.id === tab) ?? TABS[0];
@@ -139,6 +147,7 @@ export default function Sidebar({
 
             {tab === "chart"    && <ChartPanel    state={state} theme={theme} onChange={onChange} />}
             {tab === "data"     && <DataPanel     state={state} theme={theme} onChange={onChange} onAddColumn={onAddColumn} />}
+            {tab === "clean"    && <CleanPanel    state={state} theme={theme} onDeleteColumn={onDeleteColumn} onRenameColumn={onRenameColumn} onEditCell={onEditCell} onDeleteRow={onDeleteRow} onDeleteRows={onDeleteRows} />}
             {tab === "analysis" && <AnalysisPanel state={state} theme={theme} onChange={onChange} />}
             {tab === "style"    && <StylePanel    state={state} theme={theme} onChange={onChange} />}
             {tab === "export"   && (

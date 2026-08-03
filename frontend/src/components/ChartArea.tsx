@@ -238,9 +238,28 @@ export default function ChartArea({ state, theme, panelWidth, onChange }: Props)
             },
             overlaying: "y",
             side: "right",
+            automargin: true,
             showgrid: false,
             zeroline: false,
             tickfont: { color: th.axis, family: state.axisFontFamily, size: state.axisFontSize, weight: state.axisFontWeight },
+            showspikes: true,
+            spikemode: "across",
+            spikesnap: "cursor",
+            spikethickness: 1,
+            spikedash: "dot",
+            spikecolor: th.axis,
+            ticks: state.showMajorTicks ? "outside" : "",
+            ticklen: state.majorTickLen,
+            tickwidth: state.majorTickWidth,
+            tickcolor: th.axis,
+            minor: {
+              ticks: state.showMinorTicks ? "outside" : "",
+              ticklen: state.minorTickLen,
+              tickwidth: state.minorTickWidth,
+              tickcolor: th.axis,
+              nticks: state.minorTickCount + 1,
+            },
+            ...(state.showChartBorder ? { showline: true, mirror: true, linewidth: state.chartBorderWidth, linecolor: th.axis } : { showline: false, mirror: false }),
             ...(state.y2AxisScale === "log" ? { type: "log" } : {}),
           },
         } : {}),
@@ -251,6 +270,7 @@ export default function ChartArea({ state, theme, panelWidth, onChange }: Props)
         barmode: state.barMode,
         xaxis: {
           title: { text: state.xLabel || state.xCol, font: { color: th.axis, family: state.labelFontFamily, size: state.labelFontSize, weight: state.labelFontWeight } },
+          automargin: true,
           showgrid: state.showGrid,
           gridcolor: th.grid,
           tickfont: { color: th.axis, family: state.axisFontFamily, size: state.axisFontSize, weight: state.axisFontWeight },
@@ -279,6 +299,7 @@ export default function ChartArea({ state, theme, panelWidth, onChange }: Props)
         },
         yaxis: {
           title: { text: yAxisTitle, font: { color: th.axis, family: state.labelFontFamily, size: state.labelFontSize, weight: state.labelFontWeight } },
+          automargin: true,
           showgrid: state.showGrid,
           gridcolor: th.grid,
           tickfont: { color: th.axis, family: state.axisFontFamily, size: state.axisFontSize, weight: state.axisFontWeight },
@@ -342,14 +363,16 @@ export default function ChartArea({ state, theme, panelWidth, onChange }: Props)
     }
     styleEl.textContent = `
       .js-plotly-plot .xtick text,
-      .js-plotly-plot .ytick text {
+      .js-plotly-plot .ytick text,
+      .js-plotly-plot .y2tick text {
         font-weight: ${state.axisFontWeight >= 700 ? 700 : 400} !important;
         stroke: ${th.axis} !important;
         stroke-width: ${tickStroke}px !important;
         paint-order: stroke fill !important;
       }
       .js-plotly-plot .g-xtitle text,
-      .js-plotly-plot .g-ytitle text {
+      .js-plotly-plot .g-ytitle text,
+      .js-plotly-plot .g-y2title text {
         font-weight: ${state.labelFontWeight >= 700 ? 700 : 400} !important;
         stroke: ${th.axis} !important;
         stroke-width: ${labelStroke}px !important;
@@ -552,7 +575,7 @@ export default function ChartArea({ state, theme, panelWidth, onChange }: Props)
               : "Add mode — click on the plot to add a point"}
           </div>
         )}
-        <div ref={chartRef} id="cc-chart" className="h-full w-full" />
+        <div ref={chartRef} id="cc-chart" className="mx-auto h-[90%] w-[90%]" />
       </div>
     </div>
   );

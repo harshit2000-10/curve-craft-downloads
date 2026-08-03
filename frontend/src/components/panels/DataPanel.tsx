@@ -444,7 +444,7 @@ export default function DataPanel({ state, theme, onChange, onAddColumn }: Props
               <GlassBtn
                 key={col}
                 onClick={() => append(col)}
-                className={cn("h-[22px] rounded px-2 font-mono text-[12px] transition-all duration-150 active:scale-[0.93]", "bg-[var(--raised)] text-[var(--text-2)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-2)]")}
+                className={cn("h-[22px] rounded border px-2 font-mono text-[12px] transition-all duration-150 active:scale-[0.93]", "border-[var(--border)] bg-[var(--raised)] text-[var(--text-2)] hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-2)]")}
                 style={{ transitionTimingFunction: "cubic-bezier(0.23,1,0.32,1)" }}
               >
                 {col}
