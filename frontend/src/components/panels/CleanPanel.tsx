@@ -130,13 +130,13 @@ export default function CleanPanel({ state, onDeleteColumn, onRenameColumn, onEd
           const confirming = confirmingCol === c;
 
           return (
-            <div key={c} className={row}>
+            <div key={c} className={cn(row, "flex-wrap items-center")}>
               <span className="h-2 w-2 flex-none rounded-full" style={{ background: state.legend[c]?.color }} />
 
               {editing ? (
                 <input
                   autoFocus
-                  className={cn(field, "h-7 flex-1 px-2 py-0 text-[13px]")}
+                  className={cn(field, "h-7 min-w-0 flex-1 px-2 py-0 text-[13px]")}
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
                   onKeyDown={(e) => {
@@ -146,12 +146,12 @@ export default function CleanPanel({ state, onDeleteColumn, onRenameColumn, onEd
                   onBlur={() => commitEdit(c)}
                 />
               ) : (
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-[13px]" style={{ color: "var(--text-2)" }}>{c}</div>
-                  {inUse && (
-                    <div className="truncate text-[10px]" style={{ color: "var(--text-3)" }}>{inUse}</div>
-                  )}
-                </div>
+                // min-w-[60px] rather than flex-1 — on a narrow panel (mobile drawer,
+                // or the panel dragged down to its minimum width) a flexed name next
+                // to the type badge and two icon buttons had almost no room left and
+                // rendered as a sliver. It can still grow via flex-1 when there's
+                // space, it just isn't forced to give that space up first.
+                <div className="min-w-[60px] flex-1 truncate text-[13px]" style={{ color: "var(--text-2)" }}>{c}</div>
               )}
 
               {!editing && <span className={badge}>{columnKind(state.data, c)}</span>}
@@ -193,6 +193,12 @@ export default function CleanPanel({ state, onDeleteColumn, onRenameColumn, onEd
               >
                 {confirming ? <Check size={13} /> : <Trash2 size={12} />}
               </button>
+
+              {/* Usage note gets its own full-width line — cramming it onto the
+                  first line was what caused the name to collapse on narrow panels. */}
+              {!editing && inUse && (
+                <div className="w-full truncate pl-[18px] text-[10px]" style={{ color: "var(--text-3)" }}>{inUse}</div>
+              )}
             </div>
           );
         })}
@@ -229,11 +235,20 @@ export default function CleanPanel({ state, onDeleteColumn, onRenameColumn, onEd
         {state.data.length === 0 ? (
           <div className={cn("text-[11px]", "text-[var(--text-3)]")}>No rows.</div>
         ) : (
-          <div
-            className={cn("overflow-auto rounded-lg border", "border-[var(--border)]")}
-            style={{ maxHeight: 420 }}
-          >
-            <table className="w-full border-collapse text-[11px]">
+          <div className="relative">
+            {/* Sits outside the scrolling element so it stays pinned to the visible
+                right edge regardless of scroll position — the only signal on a
+                touch screen (no scrollbar) that there are more columns to see. */}
+            <div
+              className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 rounded-r-lg"
+              style={{ background: "linear-gradient(to left, var(--panel), transparent)" }}
+              aria-hidden="true"
+            />
+            <div
+              className={cn("overflow-auto rounded-lg border", "border-[var(--border)]")}
+              style={{ maxHeight: 420 }}
+            >
+              <table className="w-full border-collapse text-[11px]">
               <thead>
                 <tr>
                   <th
@@ -332,7 +347,8 @@ export default function CleanPanel({ state, onDeleteColumn, onRenameColumn, onEd
                   );
                 })}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
         )}
       </div>
