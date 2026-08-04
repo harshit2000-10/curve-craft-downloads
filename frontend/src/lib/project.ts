@@ -83,7 +83,7 @@ export async function loadProject(file: File): Promise<AppState> {
     "lineDash", "showChartBorder", "chartBorderWidth", "axisFontSize",
     "axisFontFamily", "axisFontWeight", "labelFontSize", "labelFontFamily",
     "labelFontWeight", "legendFontFamily", "legendFontSize", "legendFontWeight",
-    "legendCorner", "showMajorTicks", "majorTickLen", "majorTickWidth",
+    "legendCorner", "legendX", "legendY", "showMajorTicks", "majorTickLen", "majorTickWidth",
     "showMinorTicks", "minorTickLen", "minorTickWidth", "minorTickCount",
     "xRangeMin", "xRangeMax", "yRangeMin", "yRangeMax", "editMode",
     "editTargetCol", "boxShowPoints", "boxPointPos", "boxJitter",
@@ -117,6 +117,8 @@ export async function loadProject(file: File): Promise<AppState> {
     trendlineStatsCorner: state.trendlineStatsCorner ?? "bl",
     refLines: state.refLines ?? [],
     annotations: state.annotations ?? [],
+    legendX: state.legendX ?? null,
+    legendY: state.legendY ?? null,
   } as AppState;
 }
 

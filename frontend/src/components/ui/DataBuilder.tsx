@@ -60,6 +60,25 @@ export default function DataBuilder({ isDark, onCreate, onCancel }: Props) {
     setRows((prev) => prev.filter((_, idx) => idx !== r));
   }
 
+  /** Jump straight to N rows/columns instead of clicking + repeatedly — grows
+   * with blanks or truncates from the end, same shape addRow/addColumn build. */
+  function setRowCount(raw: string) {
+    const n = Math.max(1, Math.min(500, Math.round(Number(raw)) || 1));
+    setRows((prev) => (n > prev.length
+      ? [...prev, ...Array.from({ length: n - prev.length }, () => cols.map(() => ""))]
+      : prev.slice(0, n)));
+  }
+
+  function setColCount(raw: string) {
+    const n = Math.max(1, Math.min(50, Math.round(Number(raw)) || 1));
+    setCols((prev) => (n > prev.length
+      ? [...prev, ...Array.from({ length: n - prev.length }, (_, i) => `Column ${prev.length + i + 1}`)]
+      : prev.slice(0, n)));
+    setRows((prev) => prev.map((row) => (n > row.length
+      ? [...row, ...Array.from({ length: n - row.length }, () => "")]
+      : row.slice(0, n))));
+  }
+
   function handleCreate() {
     // Blank column names would collide as object keys — name them positionally
     // instead of silently dropping the column.
@@ -87,8 +106,35 @@ export default function DataBuilder({ isDark, onCreate, onCancel }: Props) {
 
   const canCreate = rows.some((row) => row.some((cell) => cell.trim() !== ""));
 
+  const countLabelCls = cn("text-[11px] font-medium", isDark ? "text-white/40" : "text-black/40");
+  const countInputCls = cn(
+    "w-14 rounded-md border bg-transparent px-1.5 py-1 text-center text-[12px] outline-none transition-colors",
+    isDark ? "border-white/10 text-white/80 focus:border-violet-400/60" : "border-black/10 text-black/80 focus:border-violet-500/60",
+  );
+
   return (
     <div className={cn("flex w-full flex-col gap-3 rounded-[14px] border p-4", isDark ? "border-white/8 bg-white/3" : "border-black/8 bg-black/2")}>
+      <div className="flex items-center gap-4">
+        <label className="flex items-center gap-1.5">
+          <span className={countLabelCls}>Rows</span>
+          <input
+            type="number" min={1} max={500}
+            className={countInputCls}
+            value={rows.length}
+            onChange={(e) => setRowCount(e.target.value)}
+          />
+        </label>
+        <label className="flex items-center gap-1.5">
+          <span className={countLabelCls}>Columns</span>
+          <input
+            type="number" min={1} max={50}
+            className={countInputCls}
+            value={cols.length}
+            onChange={(e) => setColCount(e.target.value)}
+          />
+        </label>
+      </div>
+
       <div className="overflow-x-auto">
         <table className="w-full border-separate" style={{ borderSpacing: "6px 6px" }}>
           <thead>

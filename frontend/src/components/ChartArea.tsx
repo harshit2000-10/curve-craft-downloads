@@ -332,7 +332,9 @@ export default function ChartArea({ state, theme, panelWidth, onChange, compact 
         },
         showlegend: state.showLegend,
         legend: {
-          ...CORNER_POSITIONS[state.legendCorner],
+          ...(state.legendX !== null && state.legendY !== null
+            ? { x: state.legendX, y: state.legendY, xanchor: "left", yanchor: "top" }
+            : CORNER_POSITIONS[state.legendCorner]),
           orientation: "v",
           bgcolor: "rgba(0,0,0,0)",
           borderwidth: 0,
@@ -342,7 +344,7 @@ export default function ChartArea({ state, theme, panelWidth, onChange, compact 
         font: { family: "IBM Plex Sans", size: 12, color: th.font },
         hoverlabel: { font: { family: "IBM Plex Sans" } },
       },
-      { responsive: true, displayModeBar: false },
+      { responsive: true, displayModeBar: false, edits: { legendPosition: true } },
     );
 
     // Wire up click-to-edit once the plot is drawn. Handlers close over the current
@@ -408,6 +410,16 @@ export default function ChartArea({ state, theme, panelWidth, onChange, compact 
         const next = [...state.editHistory, state.data].slice(-MAX_HISTORY);
         return next;
       }
+
+      // Dragging the legend (enabled via edits.legendPosition) fires this with the
+      // new paper-fraction position instead of the click/add/delete handlers below.
+      gd.removeAllListeners?.("plotly_relayout");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      gd.on("plotly_relayout", (e: any) => {
+        if (typeof e?.["legend.x"] === "number" && typeof e?.["legend.y"] === "number") {
+          onChange({ legendX: e["legend.x"], legendY: e["legend.y"] });
+        }
+      });
 
       // Delete: Plotly's point-click event maps pointIndex 1:1 to a data row here
       // (traces are built straight from state.data with no slicing).

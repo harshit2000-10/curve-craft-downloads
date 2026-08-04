@@ -107,6 +107,10 @@ export interface AppState {
   legendFontSize: number;
   legendFontWeight: number;
   legendCorner: ChartCorner;
+  /** Free-drag legend position (paper-fraction 0–1), set once the user drags
+   * the legend on the chart. Null means "use legendCorner's preset". */
+  legendX: number | null;
+  legendY: number | null;
   showMajorTicks: boolean;
   majorTickLen: number;
   majorTickWidth: number;

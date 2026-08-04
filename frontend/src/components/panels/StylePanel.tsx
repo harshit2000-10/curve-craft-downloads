@@ -14,7 +14,7 @@ const STYLE_KEYS = [
   "lineWidth", "lineDash", "showChartBorder", "chartBorderWidth",
   "axisFontSize", "axisFontFamily", "axisFontWeight",
   "labelFontSize", "labelFontFamily", "labelFontWeight",
-  "legendFontFamily", "legendFontSize", "legendFontWeight", "legendCorner",
+  "legendFontFamily", "legendFontSize", "legendFontWeight", "legendCorner", "legendX", "legendY",
   "showMajorTicks", "majorTickLen", "majorTickWidth",
   "showMinorTicks", "minorTickLen", "minorTickWidth", "minorTickCount",
   "boxShowPoints", "boxPointPos", "boxJitter", "donutHoleSize", "barMode",
@@ -293,7 +293,12 @@ export default function StylePanel({ state, theme, onChange }: Props) {
 
         {/* Legend position — 2×2 grid with labels */}
         <div className="mt-3">
-          <div className={cn("mb-1.5 text-[12px] font-medium uppercase tracking-[0.06em]", "text-[var(--text-3)]")}>Position</div>
+          <div className={cn("mb-1.5 text-[12px] font-medium uppercase tracking-[0.06em]", "text-[var(--text-3)]")}>
+            Position
+            <span className="ml-1.5 normal-case tracking-normal font-normal text-[11px]" style={{ color: "var(--text-3)" }}>
+              {state.legendX !== null ? "— dragged on chart, pick a corner to reset" : "— or drag the legend directly on the chart"}
+            </span>
+          </div>
           <div className="grid grid-cols-2 gap-1.5">
             {(
               [
@@ -309,7 +314,7 @@ export default function StylePanel({ state, theme, onChange }: Props) {
               return (
                 <GlassBtn
                   key={id}
-                  onClick={() => onChange({ legendCorner: id })}
+                  onClick={() => onChange({ legendCorner: id, legendX: null, legendY: null })}
                   className={cn(
                     "relative flex h-[44px] flex-col overflow-hidden rounded-[8px] border transition-all duration-150 active:scale-[0.95]",
                     sel

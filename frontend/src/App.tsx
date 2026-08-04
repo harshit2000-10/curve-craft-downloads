@@ -91,6 +91,8 @@ function initState(data: Record<string, unknown>[], fname: string, theme: "dark"
     legendFontSize: 12,
     legendFontWeight: 400,
     legendCorner: "tr" as const,
+    legendX: null,
+    legendY: null,
     showMajorTicks: true,
     majorTickLen: 6,
     majorTickWidth: 1,
