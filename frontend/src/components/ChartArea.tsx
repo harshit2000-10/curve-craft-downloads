@@ -1,10 +1,21 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { PAL } from "@/lib/palette";
 import { AlertTriangle } from "lucide-react";
 import { analyze, aggAxisLabel, AGG_FUNCS } from "@/lib/analysis";
 import { errorBarFor, buildTrendlines, buildShapes, buildAnnotations, isCartesian, CORNER_POSITIONS, logScaleIssues } from "@/lib/overlays";
-import type { AppState, AppTheme, ChartType } from "@/types";
+import ChartToolbar from "@/components/ChartToolbar";
+import SheetTabs from "@/components/SheetTabs";
+import AnnotationInspector from "@/components/AnnotationInspector";
+import AnnotationsList from "@/components/AnnotationsList";
+import type { AppState, AppTheme, ChartType, ChartAnnotation } from "@/types";
+
+/** Ids only need to be unique within a session — these never leave the browser. */
+function newId(): string {
+  return typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `id-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
 const AGG_LABELS: Record<string, string> = Object.fromEntries(AGG_FUNCS.map((a) => [a.id, a.label]));
 
@@ -150,11 +161,88 @@ interface Props {
    * for docking a small preview (e.g. the mobile Style/Export tabs' 216px
    * strip) where those controls have no room and duplicate the Chart tab. */
   compact?: boolean;
+  /** Switches the plotted workbook sheet. Omitted where the tab strip has no
+   * room (the docked mobile preview). */
+  onSelectSheet?: (index: number) => void;
 }
 
-export default function ChartArea({ state, theme, panelWidth, onChange, compact = false }: Props) {
+export default function ChartArea({ state, theme, panelWidth, onChange, compact = false, onSelectSheet }: Props) {
   const chartRef = useRef<HTMLDivElement>(null);
   const isDark = theme === "dark";
+  // Where the text tool's inline input sits, plus the data coords it will write to.
+  const [textDraft, setTextDraft] = useState<{ left: number; top: number; x: string; y: number; value: string } | null>(null);
+  // Live rubber-band while the arrow tool is being dragged (container-relative px).
+  const [arrowDraft, setArrowDraft] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
+  // Index into state.annotations currently showing the color/size inspector —
+  // set on creation, or by clicking an existing text/arrow with the select tool.
+  const [selectedAnnotation, setSelectedAnnotation] = useState<number | null>(null);
+  // Toolbar-driven list — the reliable way to delete an arrow when its own
+  // hit target on the plot is too thin/small to click precisely.
+  const [showAnnotationsList, setShowAnnotationsList] = useState(false);
+
+  const tool = state.chartTool ?? "select";
+  const toolsDisabled = state.editMode !== "off" || !isCartesian(state);
+  const annotations = state.annotations ?? [];
+  const selected = selectedAnnotation != null ? annotations[selectedAnnotation] : null;
+
+  function patchSelected(patch: Partial<ChartAnnotation>) {
+    if (selectedAnnotation == null) return;
+    onChange({ annotations: annotations.map((a, i) => (i === selectedAnnotation ? { ...a, ...patch } : a)) });
+  }
+
+  function deleteSelected() {
+    if (selectedAnnotation == null) return;
+    deleteAnnotationAt(selectedAnnotation);
+  }
+
+  function deleteAnnotationAt(index: number) {
+    onChange({ annotations: annotations.filter((_, i) => i !== index) });
+    setSelectedAnnotation((cur) => {
+      if (cur == null) return cur;
+      if (cur === index) return null;
+      return cur > index ? cur - 1 : cur;
+    });
+  }
+
+  function selectAnnotationAt(index: number) {
+    setSelectedAnnotation(index);
+    setShowAnnotationsList(false);
+  }
+
+  function zoomBy(factor: number) {
+    const gd = chartRef.current as (HTMLDivElement & { _fullLayout?: Record<string, { range?: [number, number] }> }) | null;
+    if (!gd?._fullLayout || !window.Plotly) return;
+    const patch: Record<string, [number, number]> = {};
+    for (const axis of ["xaxis", "yaxis"] as const) {
+      const rng = gd._fullLayout[axis]?.range;
+      if (!rng) continue;
+      const [lo, hi] = rng.map(Number);
+      if (!Number.isFinite(lo) || !Number.isFinite(hi)) continue;
+      const mid = (lo + hi) / 2;
+      const half = ((hi - lo) / 2) * factor;
+      patch[`${axis}.range`] = [mid - half, mid + half];
+    }
+    if (Object.keys(patch).length) window.Plotly.relayout(gd, patch);
+  }
+
+  function resetZoom() {
+    const gd = chartRef.current;
+    if (!gd || !window.Plotly) return;
+    window.Plotly.relayout(gd, { "xaxis.autorange": true, "yaxis.autorange": true });
+  }
+
+  function commitText() {
+    if (!textDraft) return;
+    const value = textDraft.value.trim();
+    setTextDraft(null);
+    if (!value) return;
+    const note: ChartAnnotation = {
+      id: newId(), x: textDraft.x, y: textDraft.y,
+      text: value, showArrow: false, color: isDark ? "#e8ebf1" : "#1f2430",
+    };
+    onChange({ annotations: [...annotations, note] });
+    setSelectedAnnotation(annotations.length);
+  }
 
   // Inject Plotly CDN once
   useEffect(() => {
@@ -227,13 +315,14 @@ export default function ChartArea({ state, theme, panelWidth, onChange, compact 
     const logY = state.yAxisScale === "log" ? { type: "log" } : {};
 
     const hasSecondary = isCartesian(state) && (state.secondaryYCols ?? []).some((c) => state.yCols.includes(c));
+    const annResult = buildAnnotations(state, rows, trend.stats, th.font);
 
     const plot = Plotly.react(
       chartRef.current,
       traces,
       {
         shapes: buildShapes(state, rows),
-        annotations: buildAnnotations(state, rows, trend.stats, th.font),
+        annotations: annResult.annotations,
         ...(hasSecondary ? {
           yaxis2: {
             title: {
@@ -270,7 +359,9 @@ export default function ChartArea({ state, theme, panelWidth, onChange, compact 
         title: { text: titleText, font: { family: "IBM Plex Sans", size: 17, color: th.font }, x: 0.03, xanchor: "left" },
         paper_bgcolor: th.paper,
         plot_bgcolor: th.plot,
-        dragmode: state.editMode === "off" ? "zoom" : false,
+        // Text/arrow tools own the cursor while active, so Plotly's own drag
+        // (zoom rectangle) has to stand down or it eats the gesture.
+        dragmode: state.editMode !== "off" || tool !== "select" ? false : "zoom",
         barmode: state.barMode,
         xaxis: {
           title: { text: state.xLabel || state.xCol, font: { color: th.axis, family: state.labelFontFamily, size: state.labelFontSize, weight: state.labelFontWeight } },
@@ -344,7 +435,10 @@ export default function ChartArea({ state, theme, panelWidth, onChange, compact 
         font: { family: "IBM Plex Sans", size: 12, color: th.font },
         hoverlabel: { font: { family: "IBM Plex Sans" } },
       },
-      { responsive: true, displayModeBar: false, edits: { legendPosition: true } },
+      {
+        responsive: true, displayModeBar: false,
+        edits: { legendPosition: true, annotationPosition: true, annotationTail: true },
+      },
     );
 
     // Wire up click-to-edit once the plot is drawn. Handlers close over the current
@@ -419,6 +513,53 @@ export default function ChartArea({ state, theme, panelWidth, onChange, compact 
         if (typeof e?.["legend.x"] === "number" && typeof e?.["legend.y"] === "number") {
           onChange({ legendX: e["legend.x"], legendY: e["legend.y"] });
         }
+
+        // Dragging a text label (annotationPosition) or an arrow's head/tail
+        // (annotationPosition + annotationTail) fires keys shaped like
+        // "annotations[2].x" — map the Plotly array index back to the source
+        // state.annotations index via the parallel array built alongside it.
+        const patch = new Map<number, Partial<ChartAnnotation>>();
+        for (const key of Object.keys(e ?? {})) {
+          const m = key.match(/^annotations\[(\d+)\]\.(x|y|ax|ay)$/);
+          if (!m) continue;
+          const srcIdx = annResult.sourceIndices[Number(m[1])];
+          if (srcIdx == null) continue;
+          const field = m[2] as "x" | "y" | "ax" | "ay";
+          const entry = patch.get(srcIdx) ?? {};
+          if (field === "x") entry.x = String(e[key]);
+          else entry[field] = Number(e[key]);
+          patch.set(srcIdx, entry);
+        }
+        if (patch.size) {
+          onChange({
+            annotations: state.annotations.map((a, i) => (patch.has(i) ? { ...a, ...patch.get(i) } : a)),
+          });
+        }
+      });
+
+      // Clicking (not dragging) a text label or arrow opens the color/size inspector.
+      gd.removeAllListeners?.("plotly_clickannotation");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      gd.on("plotly_clickannotation", (e: any) => {
+        const srcIdx = annResult.sourceIndices[e?.index];
+        if (srcIdx != null) setSelectedAnnotation(srcIdx);
+      });
+
+      // Plotly's annotation font object silently ignores `weight` — apply it
+      // by hand per element, same stroke-width trick used for axis/legend text
+      // above, since each label can carry a different weight (a shared CSS
+      // rule can't distinguish between annotation instances).
+      gd.querySelectorAll?.(".annotation").forEach((el: Element) => {
+        const plotIdx = Number(el.getAttribute("data-index"));
+        const srcIdx = annResult.sourceIndices[plotIdx];
+        const src = srcIdx != null ? state.annotations[srcIdx] : null;
+        const weight = src?.fontWeight ?? 400;
+        const textEl = el.querySelector(".annotation-text") as SVGTextElement | null;
+        if (!textEl) return;
+        textEl.style.fontWeight = weight >= 700 ? "700" : "400";
+        textEl.style.stroke = src?.color ?? th.font;
+        textEl.style.strokeWidth = `${(Math.sqrt((weight - 100) / 800) * 1.2).toFixed(3)}px`;
+        textEl.style.paintOrder = "stroke fill";
       });
 
       // Delete: Plotly's point-click event maps pointIndex 1:1 to a data row here
@@ -462,6 +603,74 @@ export default function ChartArea({ state, theme, panelWidth, onChange, compact 
             onChange({ data: [...state.data, { [state.xCol]: xVal, [col]: yVal }], editHistory: pushHistory() });
           };
         }
+
+        // ── Right-rail tools (text / arrow) ──────────────────────────────────
+        // Only bind when data-point editing isn't already claiming the cursor.
+        drag.onmousedown = null;
+        if (state.editMode === "off" && tool !== "select" && !compact) {
+          drag.style.cursor = tool === "text" ? "text" : "crosshair";
+
+          // Pixel → data, in the same coordinate space the add-point handler uses.
+          const toData = (clientX: number, clientY: number) => {
+            const xa = gd._fullLayout?.xaxis;
+            const ya = gd._fullLayout?.yaxis;
+            if (!xa || !ya) return null;
+            const rect = gd.getBoundingClientRect();
+            return {
+              x: xa.p2d(clientX - rect.left - xa._offset),
+              y: ya.p2d(clientY - rect.top - ya._offset),
+            };
+          };
+
+          if (tool === "text") {
+            drag.onclick = (evt: MouseEvent) => {
+              const d = toData(evt.clientX, evt.clientY);
+              if (!d) return;
+              const host = chartRef.current?.parentElement;
+              const hostRect = host?.getBoundingClientRect();
+              setTextDraft({
+                left: evt.clientX - (hostRect?.left ?? 0),
+                top: evt.clientY - (hostRect?.top ?? 0),
+                x: String(d.x), y: Number(d.y), value: "",
+              });
+            };
+          }
+
+          if (tool === "arrow") {
+            drag.onmousedown = (down: MouseEvent) => {
+              down.preventDefault();
+              const host = chartRef.current?.parentElement;
+              const hostRect = host?.getBoundingClientRect();
+              const ox = hostRect?.left ?? 0;
+              const oy = hostRect?.top ?? 0;
+              const start = { x: down.clientX, y: down.clientY };
+
+              const move = (m: MouseEvent) => {
+                setArrowDraft({ x1: start.x - ox, y1: start.y - oy, x2: m.clientX - ox, y2: m.clientY - oy });
+              };
+              const up = (u: MouseEvent) => {
+                window.removeEventListener("mousemove", move);
+                window.removeEventListener("mouseup", up);
+                setArrowDraft(null);
+                // Ignore an accidental click-without-drag — a zero-length arrow
+                // renders as an invisible stub the user then can't select.
+                if (Math.hypot(u.clientX - start.x, u.clientY - start.y) < 8) return;
+                const head = toData(u.clientX, u.clientY);
+                if (!head) return;
+                const note: ChartAnnotation = {
+                  id: newId(), x: String(head.x), y: Number(head.y),
+                  text: "", showArrow: true, color: isDark ? "#e8ebf1" : "#1f2430",
+                  // Plotly draws the tail at (x + ax, y + ay) in pixels.
+                  ax: start.x - u.clientX, ay: start.y - u.clientY,
+                };
+                onChange({ annotations: [...(state.annotations ?? []), note] });
+                setSelectedAnnotation((state.annotations ?? []).length);
+              };
+              window.addEventListener("mousemove", move);
+              window.addEventListener("mouseup", up);
+            };
+          }
+        }
       }
     }
   }
@@ -483,6 +692,19 @@ export default function ChartArea({ state, theme, panelWidth, onChange, compact 
       className="flex flex-1 flex-col overflow-hidden transition-colors duration-200"
       style={{ background: th.paper }}
     >
+      {/* Workbook sheet tabs — only rendered for multi-sheet files */}
+      {!compact && onSelectSheet && (
+        <SheetTabs
+          sheets={state.sheets ?? []}
+          active={state.activeSheet ?? 0}
+          onSelect={onSelectSheet}
+          paper={th.paper}
+          border={themeDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)"}
+          text={th.font}
+          muted={th.axis}
+        />
+      )}
+
       {/* Title / subtitle bar */}
       {!compact && (
       <div
@@ -594,6 +816,77 @@ export default function ChartArea({ state, theme, panelWidth, onChange, compact 
           </div>
         )}
         <div ref={chartRef} id="cc-chart" className={cn("mx-auto", compact ? "h-full w-full" : "h-[90%] w-[90%]")} />
+
+        {!compact && (
+          <ChartToolbar
+            tool={tool}
+            onTool={(t) => { setTextDraft(null); setSelectedAnnotation(null); onChange({ chartTool: t }); }}
+            onZoomIn={() => zoomBy(0.7)}
+            onZoomOut={() => zoomBy(1 / 0.7)}
+            onResetZoom={resetZoom}
+            disabled={toolsDisabled}
+            annotationCount={annotations.length}
+            listOpen={showAnnotationsList}
+            onToggleList={() => { setSelectedAnnotation(null); setShowAnnotationsList((s) => !s); }}
+          />
+        )}
+
+        {/* Live rubber-band while dragging an arrow */}
+        {arrowDraft && (
+          <svg className="pointer-events-none absolute inset-0 z-10 h-full w-full">
+            <defs>
+              <marker id="cc-arrow-head" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+                <path d="M0,0 L7,3 L0,6 z" fill={isDark ? "#e8ebf1" : "#1f2430"} />
+              </marker>
+            </defs>
+            <line
+              x1={arrowDraft.x1} y1={arrowDraft.y1} x2={arrowDraft.x2} y2={arrowDraft.y2}
+              stroke={isDark ? "#e8ebf1" : "#1f2430"} strokeWidth="1.5"
+              markerEnd="url(#cc-arrow-head)"
+            />
+          </svg>
+        )}
+
+        {/* Inline text entry for the text tool */}
+        {textDraft && (
+          <input
+            autoFocus
+            className="absolute z-30 rounded-[7px] border px-2 py-1 text-[13px] shadow-lg outline-none"
+            style={{
+              left: textDraft.left, top: textDraft.top,
+              borderColor: "var(--accent)", background: "var(--panel)", color: "var(--text)",
+              minWidth: 120,
+            }}
+            placeholder="Type a label…"
+            aria-label="Annotation text"
+            value={textDraft.value}
+            onChange={(e) => setTextDraft({ ...textDraft, value: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitText();
+              else if (e.key === "Escape") setTextDraft(null);
+            }}
+            onBlur={commitText}
+          />
+        )}
+
+        {!compact && selected && (
+          <AnnotationInspector
+            annotation={selected}
+            onChange={patchSelected}
+            onDelete={deleteSelected}
+            onClose={() => setSelectedAnnotation(null)}
+          />
+        )}
+
+        {!compact && !selected && showAnnotationsList && annotations.length > 0 && (
+          <AnnotationsList
+            annotations={annotations}
+            selectedIndex={selectedAnnotation}
+            onSelect={selectAnnotationAt}
+            onDelete={deleteAnnotationAt}
+            onClose={() => setShowAnnotationsList(false)}
+          />
+        )}
       </div>
     </div>
   );

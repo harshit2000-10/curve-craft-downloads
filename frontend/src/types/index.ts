@@ -39,7 +39,22 @@ export interface ChartAnnotation {
   text: string;
   showArrow: boolean;
   color: string;
+  /** Arrow tail offset in pixels from (x,y) — set when the arrow is drawn by
+   * dragging on the chart. Undefined falls back to the default upward tail. */
+  ax?: number;
+  ay?: number;
+  /** Label font size in px. Undefined falls back to the default 12px. */
+  fontSize?: number;
+  /** Label font weight (100–900). Undefined falls back to 400 (regular). */
+  fontWeight?: number;
+  /** Arrow line thickness in px (arrowhead scales with it). Undefined falls back to 1px. */
+  arrowWidth?: number;
+  /** Border box around a text label. Undefined defaults to true (current look). */
+  showBox?: boolean;
 }
+
+/** Right-rail chart tool. "select" keeps Plotly's normal drag-to-zoom. */
+export type ChartTool = "select" | "text" | "arrow";
 
 export type ChartType =
   | "line"
@@ -71,10 +86,22 @@ export interface LegendConfig {
   visible: boolean;
 }
 
+/** One tab of a loaded workbook. A CSV produces a single sheet. */
+export interface DataSheet {
+  name: string;
+  data: Record<string, unknown>[];
+}
+
 export interface AppState {
+  /** Rows of the *active* sheet — everything downstream (chart, analysis,
+   * cleaning) reads this, so sheet switching is just a swap here. */
   data: Record<string, unknown>[];
   cols: string[];
   fname: string;
+  /** Every sheet the file contained. Length 1 for CSVs and single-tab books. */
+  sheets: DataSheet[];
+  /** Index into `sheets` currently being plotted. */
+  activeSheet: number;
   chartType: ChartType;
   xCol: string;
   yCols: string[];
@@ -153,4 +180,6 @@ export interface AppState {
   trendlineStatsCorner: ChartCorner;
   refLines: RefLine[];
   annotations: ChartAnnotation[];
+  /** Active right-rail tool. Not persisted as a style — it's transient UI mode. */
+  chartTool: ChartTool;
 }

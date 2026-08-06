@@ -8,6 +8,7 @@ interface Props {
   state: AppState;
   theme: AppTheme;
   onChange: (patch: Partial<AppState>) => void;
+  onSelectSheet: (index: number) => void;
 }
 
 // Mockup shows 5 tiles: the 4 most common types plus a "More" tile that
@@ -15,7 +16,7 @@ interface Props {
 // (ChartPanel.tsx) without needing a separate sheet/modal primitive.
 const PRIMARY_TYPES: ChartType[] = ["line", "scatter", "bar", "area"];
 
-export default function MobileChartTab({ state, theme, onChange }: Props) {
+export default function MobileChartTab({ state, theme, onChange, onSelectSheet }: Props) {
   const [showMore, setShowMore] = useState(false);
   const moreTypes = CHART_TYPES.filter((t) => !PRIMARY_TYPES.includes(t.id));
 
@@ -39,7 +40,7 @@ export default function MobileChartTab({ state, theme, onChange }: Props) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex min-h-0 flex-1">
-        <ChartArea state={state} theme={theme} panelWidth={0} onChange={onChange} />
+        <ChartArea state={state} theme={theme} panelWidth={0} onChange={onChange} onSelectSheet={onSelectSheet} />
       </div>
 
       <div className="flex flex-shrink-0 flex-col gap-2.5 px-4 pb-3 pt-2.5">

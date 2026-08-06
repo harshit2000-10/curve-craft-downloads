@@ -204,14 +204,24 @@ export function buildShapes(state: AppState, rows: Row[]): unknown[] {
   return shapes;
 }
 
+export interface AnnotationsResult {
+  annotations: unknown[];
+  /** Parallel to `annotations` — the index into `state.annotations` each
+   * entry came from, or null for ref-line labels / the stats box (not
+   * draggable back into user annotation state). Lets the drag handler map a
+   * Plotly `annotations[N].x` relayout key back to the right state entry. */
+  sourceIndices: (number | null)[];
+}
+
 /** Plotly `annotations`: reference-line labels, callouts, and the fit stats block. */
 export function buildAnnotations(
   state: AppState,
   rows: Row[],
   stats: string[],
   fontColor: string,
-): unknown[] {
+): AnnotationsResult {
   const out: unknown[] = [];
+  const sourceIndices: (number | null)[] = [];
 
   if (isCartesian(state)) {
     for (const line of state.refLines ?? []) {
@@ -234,10 +244,13 @@ export function buildAnnotations(
           font: { size: 11, color: line.color },
         });
       }
+      sourceIndices.push(null);
     }
 
-    for (const a of state.annotations ?? []) {
-      if (!a.text) continue;
+    state.annotations?.forEach((a, i) => {
+      // A drawn arrow is meaningful with no text at all — only skip an entry
+      // that would render as nothing (no text AND no arrow).
+      if (!a.text && !a.showArrow) return;
       // x stays a string when the axis is categorical or date-based; Plotly copes.
       const nx = toNum(a.x);
       out.push({
@@ -246,17 +259,18 @@ export function buildAnnotations(
         text: a.text,
         showarrow: a.showArrow,
         arrowhead: 2,
-        arrowsize: 1,
-        arrowwidth: 1,
+        arrowsize: Math.min(3, Math.max(1, (a.arrowWidth ?? 1) / 1.5)),
+        arrowwidth: a.arrowWidth ?? 1,
         arrowcolor: a.color,
-        ax: 0,
-        ay: -34,
-        font: { size: 12, color: a.color },
+        ax: a.ax ?? 0,
+        ay: a.ay ?? -34,
+        font: { size: a.fontSize ?? 12, color: a.color, weight: a.fontWeight ?? 400 },
         bordercolor: a.color,
         borderpad: 3,
-        borderwidth: a.showArrow ? 0 : 1,
+        borderwidth: a.showArrow || a.showBox === false ? 0 : 1,
       });
-    }
+      sourceIndices.push(i);
+    });
   }
 
   if (state.trendlineShowStats && stats.length) {
@@ -284,7 +298,8 @@ export function buildAnnotations(
       bgcolor: "rgba(127,127,127,0.10)",
       borderpad: 5,
     });
+    sourceIndices.push(null);
   }
 
-  return out;
+  return { annotations: out, sourceIndices };
 }

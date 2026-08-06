@@ -16,12 +16,12 @@ type Tab = "chart" | "data" | "clean" | "analysis" | "style" | "export";
 
 /** Vertical icon rail. Icon paths are the 24×24 stroke paths from the design handoff. */
 const TABS: { id: Tab; label: string; d: string }[] = [
-  { id: "chart",    label: "Chart",    d: "M4 19h16M7 15l3-4 3 2 4-6" },
-  { id: "data",     label: "Data",     d: "M4 5h16v14H4zM4 10h16M10 5v14" },
-  { id: "clean",    label: "Clean",    d: "M5 3h9l5 5v13H5zM14 3v5h5M9 12l2 2 4-4" },
-  { id: "analysis", label: "Analysis", d: "M4 18l5-7 4 3 6-8" },
-  { id: "style",    label: "Style",    d: "M12 3s6 7 6 11a6 6 0 1 1-12 0c0-4 6-11 6-11z" },
-  { id: "export",   label: "Save",     d: "M5 4h11l3 3v13H5zM8 4v4h6V4M8 20v-6h8v6" },
+  { id: "chart",    label: "Graph",     d: "M4 19h16M7 15l3-4 3 2 4-6" },
+  { id: "data",     label: "Worksheet", d: "M4 5h16v14H4zM4 10h16M10 5v14" },
+  { id: "clean",    label: "Cleanup",   d: "M5 3h9l5 5v13H5zM14 3v5h5M9 12l2 2 4-4" },
+  { id: "analysis", label: "Analysis",  d: "M4 18l5-7 4 3 6-8" },
+  { id: "style",    label: "Style",     d: "M12 3s6 7 6 11a6 6 0 1 1-12 0c0-4 6-11 6-11z" },
+  { id: "export",   label: "Export",    d: "M5 4h11l3 3v13H5zM8 4v4h6V4M8 20v-6h8v6" },
 ];
 
 interface Props {
@@ -71,56 +71,41 @@ export default function Sidebar({
     >
       {/* ── Icon rail ─────────────────────────────────────────────── */}
       <nav
-        className="relative flex w-[52px] flex-shrink-0 flex-col items-center gap-1 border-r py-3"
+        className="relative flex w-[68px] flex-shrink-0 flex-col items-center gap-1 border-r py-3"
         style={{ background: "var(--raised-2)", borderColor: "var(--border)" }}
         aria-label="Panel sections"
       >
         {TABS.map((t) => {
           const sel = tab === t.id;
           return (
-            // The tooltip lives outside GlassBtn: GlassBtn sets overflow-hidden on its
-            // own <button> for the glass sheen, which would clip anything escaping the
-            // 38×38 box. The group wrapper is what the hover variant keys off.
-            <div key={t.id} className="group relative">
-              <GlassBtn
-                onClick={() => setTab(t.id)}
-                aria-label={t.label}
-                aria-current={sel ? "page" : undefined}
-                className={cn(
-                  "flex h-[38px] w-[38px] items-center justify-center rounded-[10px]",
-                  "transition-[background,color,transform] duration-150 active:scale-[0.94]",
-                  !sel && "hover-device:bg-[var(--accent-soft)]",
-                )}
-                wrapperClassName="inline-flex items-center justify-center"
-                style={{
-                  background: sel ? "var(--accent-soft)" : "transparent",
-                  color: sel ? "var(--accent-2)" : "var(--text-3)",
-                  transitionTimingFunction: easeOut,
-                }}
+            <GlassBtn
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              aria-label={t.label}
+              aria-current={sel ? "page" : undefined}
+              className={cn(
+                "flex h-[50px] w-[60px] flex-col items-center justify-center gap-1 rounded-[10px]",
+                "transition-[background,color,transform] duration-150 active:scale-[0.94]",
+                !sel && "hover-device:bg-[var(--accent-soft)]",
+              )}
+              wrapperClassName="inline-flex items-center justify-center"
+              style={{
+                background: sel ? "var(--accent-soft)" : "transparent",
+                color: sel ? "var(--accent-2)" : "var(--text-3)",
+                transitionTimingFunction: easeOut,
+              }}
+            >
+              <svg
+                width="17" height="17" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="1.8"
+                strokeLinecap="round" strokeLinejoin="round"
               >
-                <svg
-                  width="18" height="18" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" strokeWidth="1.8"
-                  strokeLinecap="round" strokeLinejoin="round"
-                >
-                  <path d={t.d} />
-                </svg>
-              </GlassBtn>
-
-              {/* Name on hover — pointer devices only, so it can't stick after a tap */}
-              <span
-                role="tooltip"
-                className={cn(
-                  "pointer-events-none absolute left-[46px] top-1/2 z-50 -translate-y-1/2 translate-x-[-4px]",
-                  "whitespace-nowrap rounded-[6px] px-2 py-1 text-[10.5px] font-semibold opacity-0 shadow-lg",
-                  "transition-[opacity,transform] duration-[125ms] ease-out",
-                  "group-hover-device:translate-x-0 group-hover-device:opacity-100",
-                )}
-                style={{ background: "var(--text)", color: "var(--panel)" }}
-              >
+                <path d={t.d} />
+              </svg>
+              <span className="whitespace-nowrap text-[9px] font-semibold leading-none tracking-[-0.02em]" style={{ fontWeight: sel ? 700 : 500 }}>
                 {t.label}
               </span>
-            </div>
+            </GlassBtn>
           );
         })}
       </nav>

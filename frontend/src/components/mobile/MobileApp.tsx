@@ -32,6 +32,7 @@ interface Props {
   onCopyChart: () => void;
   onExportPdf: () => void;
   onExportCsv: () => void;
+  onSelectSheet: (index: number) => void;
 }
 
 /** Mobile-native shell (<768px) — bottom tab bar + per-tab chart-visibility
@@ -42,7 +43,7 @@ interface Props {
 export default function MobileApp({
   appState, theme, onFile, onSample, onCreateData, onToggleTheme, onOpenProject, onReset, onUndo, onChange,
   onAddColumn, onDeleteColumn, onRenameColumn, onFillBlanks, onEditCell, onDeleteRow, onDeleteRows,
-  onExport, onCopyChart, onExportPdf, onExportCsv,
+  onExport, onCopyChart, onExportPdf, onExportCsv, onSelectSheet,
 }: Props) {
   const [tab, setTab] = useState<MobileTab>("chart");
 
@@ -71,7 +72,7 @@ export default function MobileApp({
       />
 
       <div className="flex min-h-0 flex-1 flex-col">
-        {tab === "chart" && <MobileChartTab state={appState} theme={theme} onChange={onChange} />}
+        {tab === "chart" && <MobileChartTab state={appState} theme={theme} onChange={onChange} onSelectSheet={onSelectSheet} />}
         {tab === "data" && (
           <MobileDataTab state={appState} theme={theme} onChange={onChange} onAddColumn={onAddColumn} />
         )}

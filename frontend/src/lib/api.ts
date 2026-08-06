@@ -3,12 +3,19 @@ import { isExcelFile } from "@/lib/fileTypes";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
+/** One tab of a workbook. A CSV yields exactly one of these. */
+export interface DataSheet {
+  name: string;
+  data: Record<string, unknown>[];
+}
+
 export interface UploadResult {
   columns: string[];
   data: Record<string, unknown>[];
   shape: [number, number];
-  /** Set when an Excel file had more than one sheet — only the first was loaded. */
-  extraSheets?: { loaded: string; skipped: string[] };
+  /** Every sheet in the workbook, in file order. `data`/`columns` above mirror
+   * the first non-empty one, which is what gets plotted on load. */
+  sheets: DataSheet[];
 }
 
 export interface FormulaResult {
@@ -28,16 +35,22 @@ export async function uploadCSV(file: File): Promise<UploadResult> {
     // date-formatted cells instead of raw Excel serial numbers (e.g. 45870) —
     // without it, a date column silently reads as a meaningless big number.
     const workbook = XLSX.read(buffer, { cellDates: true });
-    const [firstName, ...restNames] = workbook.SheetNames;
-    const sheet = workbook.Sheets[firstName];
-    const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+
+    // Every sheet is parsed and kept so the user can switch between them.
+    // Fully empty sheets are dropped — a workbook's trailing blank tabs would
+    // otherwise show up as tabs that plot nothing.
+    const sheets: DataSheet[] = workbook.SheetNames
+      .map((name) => ({
+        name,
+        data: XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets[name], { defval: "" }),
+      }))
+      .filter((s) => s.data.length > 0);
+
+    if (!sheets.length) throw new Error("That workbook has no readable rows in any sheet");
+
+    const { data } = sheets[0];
     const columns = Object.keys(data[0] ?? {});
-    return {
-      columns, data, shape: [data.length, columns.length],
-      // Only the first sheet is ever read — this is what makes that fact visible
-      // instead of silently discarding the rest.
-      ...(restNames.length ? { extraSheets: { loaded: firstName, skipped: restNames } } : {}),
-    };
+    return { columns, data, shape: [data.length, columns.length], sheets };
   }
 
   // CSV / TSV — PapaParse auto-detects delimiter
@@ -49,7 +62,10 @@ export async function uploadCSV(file: File): Promise<UploadResult> {
       complete: (results) => {
         const data = results.data;
         const columns = results.meta.fields ?? [];
-        resolve({ columns, data, shape: [data.length, columns.length] });
+        resolve({
+          columns, data, shape: [data.length, columns.length],
+          sheets: [{ name: file.name, data }],
+        });
       },
       error: (err) => reject(new Error(err.message)),
     });

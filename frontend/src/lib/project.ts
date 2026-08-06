@@ -76,7 +76,7 @@ export async function loadProject(file: File): Promise<AppState> {
   // a hand-edited or malicious file can carry arbitrary extra keys, and a blind
   // `...state` would let them ride straight into app state.
   const known: (keyof AppState)[] = [
-    "data", "cols", "fname", "chartType", "xCol", "yCols", "legend",
+    "data", "cols", "fname", "sheets", "activeSheet", "chartType", "xCol", "yCols", "legend",
     "showGrid", "showLegend", "showMarkers", "chartTitle", "chartSubtitle",
     "xLabel", "yLabel", "plotlyTheme", "exportFormat", "exportWidth",
     "exportHeight", "exportDpi", "xTickStep", "yTickStep", "lineWidth",
@@ -119,6 +119,11 @@ export async function loadProject(file: File): Promise<AppState> {
     annotations: state.annotations ?? [],
     legendX: state.legendX ?? null,
     legendY: state.legendY ?? null,
+    chartTool: "select",
+    // Projects saved before multi-sheet support carry no `sheets` — treat the
+    // single dataset they do have as the only sheet so the tab strip stays hidden.
+    sheets: state.sheets?.length ? state.sheets : [{ name: state.fname ?? "Sheet 1", data: state.data }],
+    activeSheet: state.activeSheet ?? 0,
   } as AppState;
 }
 

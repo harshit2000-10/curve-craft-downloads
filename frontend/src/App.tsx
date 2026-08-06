@@ -21,7 +21,7 @@ import {
   saveProject, loadProject, PROJECT_EXTENSION,
   copyChartToClipboard, downloadChartPdf, downloadDataCsv,
 } from "@/lib/project";
-import type { AppState, LineDash } from "@/types";
+import type { AppState, DataSheet, LineDash } from "@/types";
 
 
 // Show the platform-native modifier symbol so the hints match the user's keyboard.
@@ -41,24 +41,39 @@ Oct,24800,13100,278,11700
 Nov,28900,14800,321,14100
 Dec,32100,16200,358,15900`;
 
-function initState(data: Record<string, unknown>[], fname: string, theme: "dark" | "light"): AppState {
+/** Column defaults for a freshly-seen dataset. Picks by column *type*, not
+ * position — a real file like `date,region,product,revenue` would otherwise
+ * plot two text columns and render garbage. Shared by initial load and sheet
+ * switching, so both derive axes the same way. */
+function deriveColumns(data: Record<string, unknown>[]) {
   const cols = Object.keys(data[0] ?? {});
   const legend: AppState["legend"] = {};
   cols.forEach((c, i) => {
     legend[c] = { label: c, color: PAL[i % PAL.length], visible: true };
   });
 
-  // Pick defaults by column *type*, not position. Picking positionally means a real
-  // file like `date,region,product,revenue` plots two text columns and renders garbage.
   const numericCols = cols.filter((c) => isNumericCol(data, c));
   const textCols = cols.filter((c) => !numericCols.includes(c));
-  const defaultX = textCols[0] ?? cols[0] ?? "";
-  const defaultY = (numericCols.length ? numericCols : cols.slice(1)).filter((c) => c !== defaultX).slice(0, 2);
+  const xCol = textCols[0] ?? cols[0] ?? "";
+  const yCols = (numericCols.length ? numericCols : cols.slice(1)).filter((c) => c !== xCol).slice(0, 2);
+
+  return { cols, legend, xCol, yCols, numericCols };
+}
+
+function initState(
+  data: Record<string, unknown>[],
+  fname: string,
+  theme: "dark" | "light",
+  sheets?: DataSheet[],
+): AppState {
+  const { cols, legend, xCol: defaultX, yCols: defaultY, numericCols } = deriveColumns(data);
 
   return {
     data,
     cols,
     fname,
+    sheets: sheets?.length ? sheets : [{ name: fname, data }],
+    activeSheet: 0,
     chartType: "line",
     xCol: defaultX,
     yCols: defaultY,
@@ -128,6 +143,7 @@ function initState(data: Record<string, unknown>[], fname: string, theme: "dark"
     trendlineStatsCorner: "bl",
     refLines: [],
     annotations: [],
+    chartTool: "select",
   };
 }
 
@@ -177,18 +193,13 @@ export default function App() {
   function loadFile(file: File) {
     uploadCSV(file)
       .then((result) => {
-        setAppState(initState(result.data, file.name, theme));
-        if (result.extraSheets) {
-          const { loaded, skipped } = result.extraSheets;
-          // Longer than the default toast — this is a data-integrity fact the
-          // user needs to actually read, not a routine "loaded" confirmation.
-          showToast(
-            `Loaded sheet "${loaded}" · ${skipped.length} other sheet${skipped.length === 1 ? "" : "s"} skipped (${skipped.join(", ")})`,
-            7000,
-          );
-        } else {
-          showToast(`Loaded ${result.shape[0].toLocaleString()} rows · ${result.columns.length} cols`);
-        }
+        setAppState(initState(result.data, file.name, theme, result.sheets));
+        const rows = `${result.shape[0].toLocaleString()} rows · ${result.columns.length} cols`;
+        showToast(
+          result.sheets.length > 1
+            ? `Loaded ${result.sheets.length} sheets — showing "${result.sheets[0].name}" · ${rows}`
+            : `Loaded ${rows}`,
+        );
       })
       .catch((e: Error) => showToast(`Upload failed: ${e.message}`));
   }
@@ -313,6 +324,53 @@ export default function App() {
     const value = wasNumeric && parsed !== null ? parsed : rawValue;
     const data = appState.data.map((row, i) => (i === rowIndex ? { ...row, [col]: value } : row));
     handleChange({ data });
+  }
+
+  function handleSelectSheet(index: number) {
+    if (!appState || index === appState.activeSheet) return;
+    const target = appState.sheets[index];
+    if (!target) return;
+
+    // Write the working rows back first — cell edits, added columns and deleted
+    // rows live in `data`, and would be lost on the round trip otherwise.
+    const sheets = appState.sheets.map((s, i) =>
+      i === appState.activeSheet ? { ...s, data: appState.data } : s,
+    );
+
+    const cols = Object.keys(target.data[0] ?? {});
+    // Sheets that share a schema (monthly tabs, per-region tabs) are the common
+    // case — keep the user's axes and styling when the columns still exist, and
+    // only fall back to fresh defaults when the new sheet is shaped differently.
+    const sameSchema =
+      appState.xCol && cols.includes(appState.xCol) && appState.yCols.every((c) => cols.includes(c));
+
+    const derived = sameSchema ? null : deriveColumns(target.data);
+
+    handleChange({
+      sheets,
+      activeSheet: index,
+      data: target.data,
+      cols,
+      ...(derived
+        ? {
+            legend: derived.legend,
+            xCol: derived.xCol,
+            yCols: derived.yCols,
+            editTargetCol: derived.yCols[0] ?? cols[0] ?? "",
+            bubbleSizeCol: derived.numericCols.find((c) => !derived.yCols.includes(c)) ?? derived.yCols[0] ?? "",
+            // Column-scoped settings can't survive a schema change.
+            secondaryYCols: [],
+            filters: [],
+            errorBars: {},
+            refLines: [],
+          }
+        : {}),
+      // Undo history holds rows from the sheet we just left — replaying it here
+      // would write another sheet's data into this one.
+      editHistory: [],
+      editMode: "off",
+    });
+    showToast(`Sheet "${target.name}" — ${target.data.length.toLocaleString()} rows · ${cols.length} cols`);
   }
 
   function handleFillBlanks(col: string) {
@@ -441,6 +499,7 @@ export default function App() {
           onCopyChart={handleCopyChart}
           onExportPdf={handleExportPdf}
           onExportCsv={handleExportCsv}
+          onSelectSheet={handleSelectSheet}
         />
       ) : !appState ? (
         <UploadScreen
@@ -509,6 +568,7 @@ export default function App() {
               theme={theme}
               panelWidth={panelWidth}
               onChange={handleChange}
+              onSelectSheet={handleSelectSheet}
             />
           </main>
         </div>
