@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LineChart, Download, Upload, Sun, Moon, FileText, X, AlertTriangle, Save, FolderOpen, Menu } from "lucide-react";
+import { LineChart, Download, Upload, Sun, Moon, FileText, X, AlertTriangle, Save, FolderOpen, Menu, Undo2, Redo2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GlassBtn } from "@/components/ui/liquid-glass";
 import type { AppTheme } from "@/types";
@@ -15,9 +15,13 @@ interface Props {
   onShowShortcuts: () => void;
   /** Opens the side panel drawer — only meaningful below the `lg` breakpoint. */
   onTogglePanel: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
-export default function Navbar({ fname, theme, onReset, onExport, onToggleTheme, onSaveProject, onOpenProject, onShowShortcuts, onTogglePanel }: Props) {
+export default function Navbar({ fname, theme, onReset, onExport, onToggleTheme, onSaveProject, onOpenProject, onShowShortcuts, onTogglePanel, onUndo, onRedo, canUndo, canRedo }: Props) {
   const isDark = theme === "dark";
   const [confirmReset, setConfirmReset] = useState(false);
 
@@ -82,6 +86,30 @@ export default function Navbar({ fname, theme, onReset, onExport, onToggleTheme,
         </div>
 
         <div className="flex-1" />
+
+        {/* Undo */}
+        <GlassBtn
+          onClick={onUndo}
+          disabled={!canUndo}
+          className="flex h-[36px] w-[36px] flex-shrink-0 items-center justify-center rounded-[9px] border text-xs font-semibold transition-all duration-150 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
+          style={{ ...navBtnStyle, transitionTimingFunction: "cubic-bezier(0.23,1,0.32,1)" }}
+          title={canUndo ? "Undo (Ctrl+Z)" : "Nothing to undo"}
+          aria-label="Undo"
+        >
+          <Undo2 size={14} />
+        </GlassBtn>
+
+        {/* Redo */}
+        <GlassBtn
+          onClick={onRedo}
+          disabled={!canRedo}
+          className="flex h-[36px] w-[36px] flex-shrink-0 items-center justify-center rounded-[9px] border text-xs font-semibold transition-all duration-150 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
+          style={{ ...navBtnStyle, transitionTimingFunction: "cubic-bezier(0.23,1,0.32,1)" }}
+          title={canRedo ? "Redo (Ctrl+Shift+Z)" : "Nothing to redo"}
+          aria-label="Redo"
+        >
+          <Redo2 size={14} />
+        </GlassBtn>
 
         {/* Keyboard shortcuts */}
         <GlassBtn

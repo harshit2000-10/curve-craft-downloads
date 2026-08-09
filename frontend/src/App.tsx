@@ -122,6 +122,7 @@ function initState(
     editMode: "off",
     editTargetCol: defaultY[0] ?? cols[0] ?? "",
     editHistory: [],
+    redoHistory: [],
     boxShowPoints: true,
     boxPointPos: 0,
     boxJitter: 0.35,
@@ -265,12 +266,36 @@ export default function App() {
     // ones — editHistory only stores rows to stay light, so if anything that
     // changes column count/names ever starts pushing to it, this keeps cols
     // from silently drifting out of sync with what undo just restored.
-    handleChange({ data: prev, cols: Object.keys(prev[0] ?? {}), editHistory: appState.editHistory.slice(0, -1) });
+    handleChange({
+      data: prev,
+      cols: Object.keys(prev[0] ?? {}),
+      editHistory: appState.editHistory.slice(0, -1),
+      redoHistory: [...appState.redoHistory, appState.data],
+    });
     showToast("Undid last edit");
   }
 
+  function handleRedo() {
+    if (!appState?.redoHistory.length) { showToast("Nothing to redo"); return; }
+    const next = appState.redoHistory[appState.redoHistory.length - 1];
+    handleChange({
+      data: next,
+      cols: Object.keys(next[0] ?? {}),
+      editHistory: [...appState.editHistory, appState.data],
+      redoHistory: appState.redoHistory.slice(0, -1),
+    });
+    showToast("Redid edit");
+  }
+
   const handleChange = useCallback((patch: Partial<AppState>) => {
-    setAppState((prev) => prev ? { ...prev, ...patch } : prev);
+    setAppState((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      // Any new edit invalidates the redo stack — unless the patch is itself
+      // an undo/redo (those set redoHistory explicitly alongside data).
+      if ("data" in patch && !("redoHistory" in patch)) next.redoHistory = [];
+      return next;
+    });
   }, []);
 
   function handleAddColumn(name: string, expr: string) {
@@ -368,6 +393,7 @@ export default function App() {
       // Undo history holds rows from the sheet we just left — replaying it here
       // would write another sheet's data into this one.
       editHistory: [],
+      redoHistory: [],
       editMode: "off",
     });
     showToast(`Sheet "${target.name}" — ${target.data.length.toLocaleString()} rows · ${cols.length} cols`);
@@ -449,6 +475,7 @@ export default function App() {
       else if (key === "e") { e.preventDefault(); handleExport(); }
       else if (key === "c" && e.shiftKey) { e.preventDefault(); handleCopyChart(); }
       else if (key === "z" && !e.shiftKey) { e.preventDefault(); handleUndo(); }
+      else if ((key === "z" && e.shiftKey) || key === "y") { e.preventDefault(); handleRedo(); }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -522,6 +549,10 @@ export default function App() {
             onOpenProject={() => projectInputRef.current?.click()}
             onShowShortcuts={() => setShowShortcuts(true)}
             onTogglePanel={() => setPanelOpen((o) => !o)}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            canUndo={appState.editHistory.length > 0}
+            canRedo={appState.redoHistory.length > 0}
           />
           <main className="relative flex flex-1 overflow-hidden">
             <h1 className="sr-only">Curve Craft — Chart Editor</h1>

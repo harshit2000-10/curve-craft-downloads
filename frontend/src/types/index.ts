@@ -152,6 +152,7 @@ export interface AppState {
   editMode: EditMode;
   editTargetCol: string;
   editHistory: Record<string, unknown>[][];
+  redoHistory: Record<string, unknown>[][];
   boxShowPoints: boolean;
   boxPointPos: number;
   boxJitter: number;

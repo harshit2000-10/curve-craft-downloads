@@ -201,7 +201,11 @@ export default function DataPanel({ state, theme, onChange, onAddColumn }: Props
               onClick={() => {
                 if (!state.editHistory.length) return;
                 const prev = state.editHistory[state.editHistory.length - 1];
-                onChange({ data: prev, editHistory: state.editHistory.slice(0, -1) });
+                onChange({
+                  data: prev,
+                  editHistory: state.editHistory.slice(0, -1),
+                  redoHistory: [...state.redoHistory, state.data],
+                });
               }}
               title={state.editHistory.length ? `Undo last edit (${state.editHistory.length} available)` : "No edits to undo"}
               className={cn(

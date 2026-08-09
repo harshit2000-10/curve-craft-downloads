@@ -102,6 +102,7 @@ export async function loadProject(file: File): Promise<AppState> {
     data: state.data,
     cols: state.cols,
     editHistory: [],
+    redoHistory: [],
     filters: state.filters ?? [],
     aggFunc: state.aggFunc ?? "none",
     sortMode: state.sortMode ?? "none",
