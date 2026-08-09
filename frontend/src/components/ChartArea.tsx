@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn, escapeHtml } from "@/lib/utils";
 import { PAL } from "@/lib/palette";
 import { AlertTriangle } from "lucide-react";
 import { analyze, aggAxisLabel, AGG_FUNCS } from "@/lib/analysis";
@@ -298,8 +298,8 @@ export default function ChartArea({ state, theme, panelWidth, onChange, compact 
     if (!Plotly || !chartRef.current) return;
 
     const titleText = state.chartSubtitle
-      ? `${state.chartTitle}<br><sup>${state.chartSubtitle}</sup>`
-      : state.chartTitle;
+      ? `${escapeHtml(state.chartTitle)}<br><sup>${escapeHtml(state.chartSubtitle)}</sup>`
+      : escapeHtml(state.chartTitle);
 
     const th = CHART_THEMES[state.plotlyTheme] ?? CHART_THEMES.plotly_white;
     const { rows, transformed } = analyze(state);

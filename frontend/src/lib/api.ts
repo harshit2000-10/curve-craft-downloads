@@ -25,8 +25,14 @@ export interface FormulaResult {
 
 // ── CSV / Excel parser (runs in browser, zero server) ─────────────────────────
 
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50 MB — guards against tab-crashing parses
+
 /** Parse a CSV, TSV, or Excel file entirely on the user's machine. */
 export async function uploadCSV(file: File): Promise<UploadResult> {
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new Error(`That file is ${(file.size / 1024 / 1024).toFixed(0)} MB — please use a file under 50 MB`);
+  }
+
   // Excel — load SheetJS lazily (heavy ~1 MB, only when needed)
   if (isExcelFile(file.name)) {
     const XLSX = await import("@e965/xlsx");
