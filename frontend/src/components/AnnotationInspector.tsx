@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, Trash2, X } from "lucide-react";
+import { Check, RotateCw, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PAL } from "@/lib/palette";
 import { Switch } from "@/components/ui/switch";
@@ -95,6 +95,11 @@ export default function AnnotationInspector({ annotation: a, onChange, onDelete,
           className="w-full accent-[var(--accent)]"
           onChange={(e) => onChange(isArrow ? { arrowWidth: Number(e.target.value) } : { fontSize: Number(e.target.value) })}
         />
+      </div>
+
+      <div className="flex items-center gap-1.5 text-[11px]" style={{ color: "var(--text-3)" }}>
+        <RotateCw size={12} />
+        <span>Drag it on the chart to rotate</span>
       </div>
 
       {!isArrow && (

@@ -51,6 +51,8 @@ export interface ChartAnnotation {
   arrowWidth?: number;
   /** Border box around a text label. Undefined defaults to true (current look). */
   showBox?: boolean;
+  /** Text rotation in degrees, clockwise. Undefined falls back to 0 (horizontal). */
+  textangle?: number;
 }
 
 /** Right-rail chart tool. "select" keeps Plotly's normal drag-to-zoom. */

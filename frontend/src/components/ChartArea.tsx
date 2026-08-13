@@ -168,6 +168,9 @@ interface Props {
 
 export default function ChartArea({ state, theme, panelWidth, onChange, compact = false, onSelectSheet }: Props) {
   const chartRef = useRef<HTMLDivElement>(null);
+  // The currently-armed capture-phase rotate-drag listener on `gd`, so each
+  // render can remove the previous one before attaching a fresh closure.
+  const rotateListenerRef = useRef<((e: MouseEvent) => void) | null>(null);
   const isDark = theme === "dark";
   // Where the text tool's inline input sits, plus the data coords it will write to.
   const [textDraft, setTextDraft] = useState<{ left: number; top: number; x: string; y: number; value: string } | null>(null);
@@ -261,8 +264,11 @@ export default function ChartArea({ state, theme, panelWidth, onChange, compact 
   useEffect(() => {
     if (!window.Plotly || !chartRef.current || !state.data.length) return;
     renderChart();
+    // selectedAnnotation isn't part of `state` — it's local UI selection — but
+    // the rotate-by-drag wiring below only arms itself for the selected
+    // annotation, so a selection change has to re-run attachEditHandlers too.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, theme]);
+  }, [state, theme, selectedAnnotation]);
 
   // Plotly's `responsive: true` only listens for *window* resize, so dragging the
   // panel divider changes the container without the chart ever re-laying out.
@@ -555,12 +561,81 @@ export default function ChartArea({ state, theme, panelWidth, onChange, compact 
         const src = srcIdx != null ? state.annotations[srcIdx] : null;
         const weight = src?.fontWeight ?? 400;
         const textEl = el.querySelector(".annotation-text") as SVGTextElement | null;
-        if (!textEl) return;
-        textEl.style.fontWeight = weight >= 700 ? "700" : "400";
-        textEl.style.stroke = src?.color ?? th.font;
-        textEl.style.strokeWidth = `${(Math.sqrt((weight - 100) / 800) * 1.2).toFixed(3)}px`;
-        textEl.style.paintOrder = "stroke fill";
+        if (textEl) {
+          textEl.style.fontWeight = weight >= 700 ? "700" : "400";
+          textEl.style.stroke = src?.color ?? th.font;
+          textEl.style.strokeWidth = `${(Math.sqrt((weight - 100) / 800) * 1.2).toFixed(3)}px`;
+          textEl.style.paintOrder = "stroke fill";
+        }
+        // Cursor hint only — the actual drag interception below runs on `gd`
+        // in the capture phase, since Plotly rebinds its own mousedown
+        // handler directly on this element (sometimes lazily, on hover),
+        // which would otherwise silently reclaim a handler set here.
+        (el as HTMLElement).style.cursor =
+          srcIdx != null && srcIdx === selectedAnnotation && state.editMode === "off"
+            ? "grab" : "";
       });
+
+      // Rotate-by-drag: once a text/arrow is selected (a plain click via
+      // plotly_clickannotation above), dragging its own body directly
+      // rotates it around its anchor instead of moving it. A fresh,
+      // not-yet-selected annotation still moves on drag — this only arms
+      // once the click has already landed, so Plotly's native
+      // annotationPosition/annotationTail drag never gets shadowed for a
+      // first-touch reposition. Listening on `gd` in the capture phase (not
+      // on the annotation element itself) guarantees this runs before
+      // Plotly's own drag handler, no matter when Plotly (re)binds it.
+      if (rotateListenerRef.current) {
+        gd.removeEventListener("mousedown", rotateListenerRef.current, true);
+        rotateListenerRef.current = null;
+      }
+      if (state.editMode === "off" && selectedAnnotation != null) {
+        const handler = (down: MouseEvent) => {
+          const annEl = (down.target as HTMLElement)?.closest?.(".annotation") as HTMLElement | null;
+          if (!annEl) return;
+          const plotIdx = Number(annEl.getAttribute("data-index"));
+          const srcIdx = annResult.sourceIndices[plotIdx];
+          if (srcIdx == null || srcIdx !== selectedAnnotation) return;
+          const ann = state.annotations[srcIdx];
+          const xa = gd._fullLayout?.xaxis;
+          const ya = gd._fullLayout?.yaxis;
+          if (!ann || !xa || !ya) return;
+
+          down.preventDefault();
+          down.stopPropagation();
+          const rect = gd.getBoundingClientRect();
+          const anchorX = xa.d2p(ann.x) + xa._offset + rect.left;
+          const anchorY = ya.d2p(ann.y) + ya._offset + rect.top;
+
+          annEl.style.cursor = "grabbing";
+          const move = (m: MouseEvent) => {
+            const deg = (Math.atan2(m.clientX - anchorX, -(m.clientY - anchorY)) * 180) / Math.PI;
+            const norm = ((deg % 360) + 360) % 360;
+            if (ann.showArrow) {
+              const len = Math.hypot(ann.ax ?? 0, ann.ay ?? -34) || 34;
+              const rad = (norm * Math.PI) / 180;
+              onChange({
+                annotations: state.annotations.map((a, i) =>
+                  i === srcIdx ? { ...a, ax: len * Math.sin(rad), ay: -len * Math.cos(rad) } : a),
+              });
+            } else {
+              onChange({
+                annotations: state.annotations.map((a, i) =>
+                  i === srcIdx ? { ...a, textangle: norm > 180 ? norm - 360 : norm } : a),
+              });
+            }
+          };
+          const up = () => {
+            annEl.style.cursor = "grab";
+            window.removeEventListener("mousemove", move);
+            window.removeEventListener("mouseup", up);
+          };
+          window.addEventListener("mousemove", move);
+          window.addEventListener("mouseup", up);
+        };
+        rotateListenerRef.current = handler;
+        gd.addEventListener("mousedown", handler, true);
+      }
 
       // Delete: Plotly's point-click event maps pointIndex 1:1 to a data row here
       // (traces are built straight from state.data with no slicing).

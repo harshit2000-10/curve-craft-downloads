@@ -265,6 +265,7 @@ export function buildAnnotations(
         ax: a.ax ?? 0,
         ay: a.ay ?? -34,
         font: { size: a.fontSize ?? 12, color: a.color, weight: a.fontWeight ?? 400 },
+        textangle: a.textangle ?? 0,
         bordercolor: a.color,
         borderpad: 3,
         borderwidth: a.showArrow || a.showBox === false ? 0 : 1,
