@@ -23,7 +23,12 @@ const AGG_LABELS: Record<string, string> = Object.fromEntries(AGG_FUNCS.map((a) 
 // Aggregates (histogram/box/heatmap) have no single source row, so they're excluded.
 const EDITABLE_TYPES: ChartType[] = ["line", "scatter", "bar", "area", "pie"];
 
-// Plotly loaded from CDN via window global to avoid large bundle
+// Plotly used to load from a CDN <script>; it now ships in the bundle (so the
+// app works with zero network access) but stays a *dynamic* import — see the
+// loader effect below — so it's still its own lazily-fetched chunk rather
+// than bloating the eagerly-loaded main bundle. The rest of this file keeps
+// driving it through `window.Plotly` to avoid touching every call site for
+// what's otherwise just a bundled-vs-CDN source swap.
 declare global {
   interface Window {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -247,18 +252,15 @@ export default function ChartArea({ state, theme, panelWidth, onChange, compact 
     setSelectedAnnotation(annotations.length);
   }
 
-  // Inject Plotly CDN once
+  // Loads the bundled Plotly chunk once (dynamic import, not a CDN <script>,
+  // but still lazy so the main bundle doesn't carry its ~3MB eagerly).
   useEffect(() => {
     if (window.Plotly) return;
-    const s = document.createElement("script");
-    s.src = "https://cdn.plot.ly/plotly-2.32.0.min.js";
-    // SRI pin: if cdn.plot.ly is ever compromised or DNS-hijacked, a tampered
-    // bundle fails the hash check and refuses to execute rather than running with
-    // full page access to every dataset the user has loaded.
-    s.integrity = "sha384-7TVmlZWH60iKX5Uk7lSvQhjtcgw2tkFjuwLcXoRSR4zXTyWFJRm9aPAguMh7CIra";
-    s.crossOrigin = "anonymous";
-    s.async = true;
-    document.head.appendChild(s);
+    import("plotly.js-dist-min").then((mod) => {
+      window.Plotly = mod.default;
+      if (chartRef.current && state.data.length) renderChart();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -281,23 +283,6 @@ export default function ChartArea({ state, theme, panelWidth, onChange, compact 
     if (!el || !window.Plotly || !el.querySelector(".main-svg")) return;
     window.Plotly.Plots.resize(el);
   }, [panelWidth]);
-
-  // Retry after Plotly loads — caps at 30 attempts (~6s) to avoid infinite poll if CDN blocked
-  useEffect(() => {
-    if (window.Plotly) return;
-    let attempts = 0;
-    const interval = setInterval(() => {
-      attempts++;
-      if (window.Plotly && state.data.length && chartRef.current) {
-        renderChart();
-        clearInterval(interval);
-      } else if (attempts >= 30) {
-        clearInterval(interval);
-      }
-    }, 200);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.data]);
 
   function renderChart() {
     const Plotly = window.Plotly;

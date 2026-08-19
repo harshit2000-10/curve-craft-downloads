@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --port 5173",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "tauri": "tauri"
   },
   "dependencies": {
     "@e965/xlsx": "^0.20.3",
@@ -20,6 +21,7 @@
     "mathjs": "^15.2.0",
     "motion": "^12.40.0",
     "papaparse": "^5.5.3",
+    "plotly.js-dist-min": "^3.7.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.18.2",
@@ -27,6 +29,7 @@
     "three": "^0.160.0"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4",
     "@types/papaparse": "^5.5.2",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
